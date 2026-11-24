@@ -1,0 +1,13 @@
+CREATE TABLE IF NOT EXISTS events(id INTEGER PRIMARY KEY,code TEXT UNIQUE NOT NULL,title TEXT NOT NULL,active_moment TEXT NOT NULL DEFAULT 'm1');
+CREATE TABLE IF NOT EXISTS messages(id INTEGER PRIMARY KEY,event_id INTEGER NOT NULL,guest_name TEXT NOT NULL,body TEXT NOT NULL,status TEXT NOT NULL DEFAULT 'pending',created_at TEXT DEFAULT CURRENT_TIMESTAMP);
+CREATE TABLE IF NOT EXISTS polls(id INTEGER PRIMARY KEY,event_id INTEGER NOT NULL,question TEXT NOT NULL,active INTEGER DEFAULT 1);
+CREATE TABLE IF NOT EXISTS poll_options(id INTEGER PRIMARY KEY,poll_id INTEGER NOT NULL,label TEXT NOT NULL,sort_order INTEGER DEFAULT 0);
+CREATE TABLE IF NOT EXISTS poll_votes(id INTEGER PRIMARY KEY,poll_id INTEGER NOT NULL,option_id INTEGER NOT NULL,voter_key TEXT NOT NULL,UNIQUE(poll_id,voter_key));
+CREATE TABLE IF NOT EXISTS tracks(id INTEGER PRIMARY KEY,event_id INTEGER NOT NULL,tidal_id TEXT NOT NULL,title TEXT NOT NULL,artist TEXT NOT NULL,album TEXT,artwork_url TEXT,votes INTEGER DEFAULT 0,UNIQUE(event_id,tidal_id));
+CREATE TABLE IF NOT EXISTS track_votes(id INTEGER PRIMARY KEY,track_id INTEGER NOT NULL,voter_key TEXT NOT NULL,UNIQUE(track_id,voter_key));
+CREATE TABLE IF NOT EXISTS moments(id INTEGER PRIMARY KEY,event_id INTEGER NOT NULL,moment_key TEXT NOT NULL,enabled INTEGER DEFAULT 1,duration_seconds INTEGER,UNIQUE(event_id,moment_key));
+INSERT OR IGNORE INTO events(code,title,active_moment) VALUES('PARTY2026','Your Event','m1');
+INSERT OR IGNORE INTO moments(event_id,moment_key) SELECT id,'m1' FROM events WHERE code='PARTY2026';
+INSERT OR IGNORE INTO moments(event_id,moment_key) SELECT id,'m2' FROM events WHERE code='PARTY2026';
+INSERT OR IGNORE INTO moments(event_id,moment_key) SELECT id,'m3' FROM events WHERE code='PARTY2026';
+INSERT OR IGNORE INTO moments(event_id,moment_key) SELECT id,'m4' FROM events WHERE code='PARTY2026';
