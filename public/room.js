@@ -45,9 +45,10 @@ async function draw(){
     const response=await fetch(`/api/${encodeURIComponent(code)}/state`,{cache:'no-store'});
     if(!response.ok) throw new Error('Evento indisponível');
     const data=await response.json();
-    const moment=data.event.activeMoment;
+    const moment=String(data.event.activeMoment||'').toLowerCase().trim();
+    const qr=el('join-qr');
+    qr.classList.toggle('visible',moment==='m1'||moment==='m2');
     setupProjectorQR();
-    el('join-qr').classList.toggle('visible',moment==='m1'||moment==='m2');
     document.querySelector('.room-screen').classList.toggle('moment-call',moment==='m3'||moment==='m4');
     el('event-brand').textContent='PEDE & FATIA';
     document.title='PEDE & FATIA — Projecção';
