@@ -306,3 +306,19 @@ button.active{outline-color:var(--acid)}
 .track-confirm-actions button{min-height:48px;margin:0}
 .track-confirm-actions .secondary{background:transparent;color:var(--fg);border:1px solid #62584c}
 @media(max-width:700px){.track-result strong{font-size:15px}.track-result span{font-size:12px}.track-confirm-card{padding:22px}}
+
+/* Projector M1: music ranking with live vote graph */
+.room-ranking{grid-template-columns:2.1em minmax(0,1fr);align-items:start}
+.room-track-info{min-width:0;display:flex;flex-direction:column;gap:9px}
+.room-track-line{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:16px;row-gap:3px;align-items:baseline}
+.room-track-line strong{grid-column:1;grid-row:1;font-size:clamp(18px,2vw,30px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.room-track-line span{grid-column:1;grid-row:2;font:clamp(12px,1.15vw,17px) 'DM Mono';color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.room-track-line em{grid-column:2;grid-row:1 / span 2;align-self:center;font:600 clamp(13px,1.25vw,19px) 'DM Mono';font-style:normal;color:var(--acid);white-space:nowrap}
+.room-track-bar{height:clamp(8px,.8vw,12px);width:100%;background:#3d3933;overflow:hidden}
+.room-track-bar i{display:block;height:100%;background:linear-gradient(90deg,var(--red),var(--acid));transition:width .45s ease}
+@media(max-width:700px){
+ .room-track-line strong{font-size:clamp(12px,2.4vw,17px)}
+ .room-track-line span{font-size:10px}
+ .room-track-line em{font-size:11px}
+ .room-track-info{gap:5px}
+}
