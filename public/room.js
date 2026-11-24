@@ -29,7 +29,7 @@ function renderTracks(tracks){
 }
 function renderPoll(poll){
   el('primary-label').textContent='RESULTADO DA VOTAÇÃO';
-  const options=poll?.options||[];
+  const options=[...(poll?.options||[])].sort((a,b)=>(Number(b.votes)||0)-(Number(a.votes)||0));
   const total=options.reduce((sum,option)=>sum+(Number(option.votes)||0),0);
   el('primary-content').innerHTML=options.length
     ? options.slice(0,5).map(option=>{
