@@ -1,5 +1,25 @@
 let renderedMoment = null;
 
+function renderPoll(poll) {
+  const question = document.querySelector('#poll-question');
+  const options = document.querySelector('#poll-options');
+  if (!question || !options) return;
+  question.textContent = poll?.question || 'A votação ainda não está disponível.';
+  const items = poll?.options || [];
+  options.innerHTML = items.length
+    ? items.map(option => `<button class="option" data-id="${esc(option.id)}">${esc(option.label)}</button>`).join('')
+    : '<p class="poll-empty">A votação ainda não tem opções. Aguarda que o DJ a configure.</p>';
+  options.querySelectorAll('[data-id]').forEach(button => {
+    button.onclick = async () => {
+      try {
+        await api('poll/vote', {method:'POST',body:JSON.stringify({optionId:button.dataset.id})});
+        button.textContent += ' ✓';
+        button.disabled = true;
+      } catch (error) { alert(error.message); }
+    };
+  });
+}
+
 async function draw() {
   try {
     const d = await api('state');
@@ -8,8 +28,11 @@ async function draw() {
     document.querySelector('#title').textContent = d.event.title;
     document.querySelector('#intro').textContent = 'A experiência acompanha o momento da festa.';
 
-    // Só reconstruir a interface quando o Admin muda o momento activo.
-    if (moment === renderedMoment) return;
+    // Mantém a interface e os campos intactos; actualiza os dados dinâmicos da poll.
+    if (moment === renderedMoment) {
+      if (moment === 'm2') renderPoll(d.poll);
+      return;
+    }
     renderedMoment = moment;
 
     if (moment === 'm1') {
@@ -26,21 +49,8 @@ async function draw() {
       };
       bindMessage();
     } else if (moment === 'm2') {
-      content.innerHTML =
-        `<h2>${esc(d.poll?.question || 'Duelo de músicas')}</h2>` +
-        (d.poll?.options || []).map(option =>
-          `<button class="option" data-id="${esc(option.id)}">${esc(option.label)}</button>`
-        ).join('') +
-        '<hr><h2>Mural de mensagens</h2><input id="name" placeholder="O teu nome"><textarea id="msg" placeholder="Escreve uma mensagem"></textarea><button id="send">ENVIAR PARA APROVAÇÃO</button>';
-      content.querySelectorAll('[data-id]').forEach(button => {
-        button.onclick = async () => {
-          try {
-            await api('poll/vote', {method:'POST',body:JSON.stringify({optionId:button.dataset.id})});
-            button.textContent += ' ✓';
-            button.disabled = true;
-          } catch (error) { alert(error.message); }
-        };
-      });
+      content.innerHTML = '<h2 id="poll-question">A carregar votação…</h2><div id="poll-options"></div><hr><h2>Mural de mensagens</h2><input id="name" placeholder="O teu nome"><textarea id="msg" placeholder="Escreve uma mensagem"></textarea><button id="send">ENVIAR PARA APROVAÇÃO</button>';
+      renderPoll(d.poll);
       bindMessage();
     } else if (moment === 'm3') {
       content.innerHTML = '<h2>MIDNIGHT SLICE</h2>Está na hora da pizza. Vai buscar uma fatia.';
