@@ -61,7 +61,8 @@ async function draw(){
       renderTracks(data.tracks);
       renderMessages(data.messages);
     }else if(moment==='m2'){
-      el('headline').textContent=data.poll?.question||'SONG WARS';
+      const pollQuestion=String(data.poll?.question||'SONG WARS');
+      el('headline').innerHTML=esc(pollQuestion).replace(/\\s+(ESTA)\\b/i,'<br>$1');
       el('body').textContent='Vota no teu lado. Os resultados aparecem em directo.';
       renderPoll(data.poll);
       renderMessages(data.messages);
