@@ -19,22 +19,23 @@ function tidalArtistNames(item,included){
 }
 async function tidalSearch(env,q){
  const token=await tidalToken(env),url=new URL("https://openapi.tidal.com/v2/searchResults");
- url.searchParams.set("query",q);url.searchParams.set("countryCode","PT");url.searchParams.set("include","tracks.artists,tracks.albums");
+ url.searchParams.set("filter[query]",q);url.searchParams.set("countryCode","PT");url.searchParams.set("include","tracks.artists,tracks.albums");
  const response=await fetch(url,{headers:{"Authorization":"Bearer "+token,"Accept":"application/vnd.api+json"}});
  const payload=await response.json();
- if(!response.ok)throw new Error("A pesquisa TIDAL não está disponível ("+response.status+").");
- const included=payload.included||[],search=payload.data||[];
- const trackRefs=search.flatMap(x=>x.relationships?.tracks?.data||[]);
- const results=trackRefs.map(ref=>included.find(x=>x.type===ref.type&&x.id===ref.id)).filter(Boolean).slice(0,8);
- return results.map(t=>({tidalId:t.id,title:t.attributes?.title||"Sem título",artist:tidalArtistNames(t,included),album:(t.relationships?.albums?.data||[]).map(r=>included.find(x=>x.type===r.type&&x.id===r.id)?.attributes?.title).filter(Boolean)[0]||"",duration:t.attributes?.duration||0,source:"tidal"}));
+ if(!response.ok)throw new Error("A pesquisa TIDAL não está disponível ("+response.status+"): "+(payload.errors?.[0]?.detail||payload.errors?.[0]?.title||"erro da API"));
+ const root=(payload.data||[]).find(x=>x.type==="searchResults")||(Array.isArray(payload.data)?payload.data[0]:payload.data);
+ const included=payload.included||[];
+ const refs=root?.relationships?.tracks?.data||[];
+ const tracks=refs.map(ref=>included.find(x=>x.type===ref.type&&x.id===ref.id)).filter(Boolean);
+ return tracks.slice(0,8).map(t=>({tidalId:t.id,title:t.attributes?.title||"Sem título",artist:tidalArtistNames(t,included),album:(t.relationships?.albums?.data||[]).map(r=>included.find(x=>x.type===r.type&&x.id===r.id)?.attributes?.title).filter(Boolean)[0]||"",duration:t.attributes?.duration||0,source:"tidal"}));
 }
 async function tidalSuggestions(env,q){
  const token=await tidalToken(env),url=new URL("https://openapi.tidal.com/v2/searchSuggestions");
- url.searchParams.set("query",q);url.searchParams.set("countryCode","PT");
+ url.searchParams.set("filter[query]",q);url.searchParams.set("countryCode","PT");
  const response=await fetch(url,{headers:{"Authorization":"Bearer "+token,"Accept":"application/vnd.api+json"}});
  const payload=await response.json();
  if(!response.ok)return [];
- return (payload.data||[]).slice(0,5).map(x=>x.attributes?.query||x.attributes?.text||"").filter(Boolean);
+ return (payload.data||[]).slice(0,5).map(x=>x.attributes?.query||x.attributes?.text||x.id||"").filter(Boolean);
 }
 async function state(env,e){
  const [msgs,tracks,poll,opts]=await Promise.all([
