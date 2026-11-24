@@ -46,9 +46,9 @@ async function draw() {
       renderPoll(d.poll);
       bindMessage();
     } else if (moment === 'm3') {
-      content.innerHTML = '<h2>MIDNIGHT SLICE</h2>Está na hora da pizza. Vai buscar uma fatia.';
+      content.innerHTML = '<div class="device-call"><h2>MIDNIGHT<br><em>SLICE.</em></h2><p>A PIZZA ESTÁ SERVIDA. VAI BUSCAR A TUA FATIA.</p></div>';
     } else {
-      content.innerHTML = '<h2>TURN ON THE LIGHTS</h2>Acende a lanterna do teu telemóvel.';
+      content.innerHTML = '<div class="device-call"><h2>TURN ON<br><em>THE LIGHTS.</em></h2><p>LIGA A LANTERNA DO TEU TELEMÓVEL.</p></div>';
     }
   } catch (error) {
     document.querySelector('#content').textContent = error.message;
