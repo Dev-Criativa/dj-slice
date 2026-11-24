@@ -11,9 +11,16 @@ function renderMessages(messages){
 
 function renderTracks(tracks){
   const list=(tracks||[]).slice(0,5);
-  el('primary-label').textContent='TOP MÚSICAS';
+  const total=list.reduce((sum,track)=>sum+(Number(track.votes)||0),0);
+  const max=Math.max(1,...list.map(track=>Number(track.votes)||0));
+  el('primary-label').textContent='TOP MÚSICAS · '+total+' VOTOS';
   el('primary-content').innerHTML=list.length
-    ? list.map((track,index)=>`<div class="room-ranking"><b>${index+1}</b><div><strong>${esc(track.title)}</strong><span>${esc(track.artist)}</span></div><em>${Number(track.votes)||0}</em></div>`).join('')
+    ? list.map((track,index)=>{
+       const votes=Number(track.votes)||0;
+       const share=total?Math.round(votes/total*100):0;
+       const width=Math.round(votes/max*100);
+       return `<div class="room-ranking"><b>${index+1}</b><div class="room-track-info"><div class="room-track-line"><strong>${esc(track.title)}</strong><span>${esc(track.artist)}</span><em>${votes} ${votes===1?'voto':'votos'} · ${share}%</em></div><div class="room-track-bar"><i style="width:${width}%"></i></div></div></div>`;
+      }).join('')
     : '<p class="room-empty">As sugestões e os votos aparecem aqui.</p>';
 }
 
