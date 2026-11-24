@@ -368,3 +368,38 @@ button.active{outline-color:var(--acid)}
  .room-screen.moment-call h1{font-size:clamp(58px,14vw,100px)}
  .room-screen.moment-call #body{font-size:clamp(19px,5vw,30px)}
 }
+
+
+/* TCHAM layout follows the supplied reference: event name, headline and one call only */
+.room-screen.moment-call{
+ display:flex;flex-direction:column;align-items:stretch;justify-content:center;
+ gap:0;padding:5vh 8.5vw;text-align:left;
+ background:transparent;
+}
+.room-screen.moment-call .room-header{
+ display:flex!important;flex:none;width:100%;height:auto;min-height:0;
+ padding:0 0 2.2vh;margin:0 0 5vh;
+ border-bottom:1px solid rgba(240,201,120,.32);
+}
+.room-screen.moment-call .room-header b{
+ display:block;font-size:clamp(22px,3vw,42px);letter-spacing:-.045em
+}
+.room-screen.moment-call .room-header small,
+.room-screen.moment-call #dashboard{display:none!important}
+.room-screen.moment-call h1{
+ width:100%;max-width:none;margin:0 0 3.5vh;
+ font-size:clamp(86px,14vw,220px);line-height:.78;
+ letter-spacing:-.095em;text-align:left;text-transform:uppercase
+}
+.room-screen.moment-call #body{
+ max-width:none;margin:0;
+ font:clamp(20px,3vw,43px)/1.15 'DM Mono';
+ letter-spacing:0;text-transform:uppercase;color:#d0c7b9;text-align:left
+}
+.room-screen.moment-call h1 em{color:var(--red)}
+@media(max-width:700px){
+ .room-screen.moment-call{padding:5vh 7vw}
+ .room-screen.moment-call .room-header{padding-bottom:2vh;margin-bottom:7vh}
+ .room-screen.moment-call h1{font-size:clamp(58px,14vw,108px);margin-bottom:4vh}
+ .room-screen.moment-call #body{font-size:clamp(16px,4vw,25px)}
+}
