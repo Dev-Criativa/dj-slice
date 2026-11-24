@@ -26,6 +26,8 @@ async function draw() {
     const moment = d.event.activeMoment;
     const content = document.querySelector('#content');
     document.querySelector('#title').textContent = d.event.title;
+    document.querySelector('#event-brand').textContent = d.event.title;
+    document.title = d.event.title;
     document.querySelector('#intro').textContent = 'A experiência acompanha o momento da festa.';
 
     // Mantém a interface e os campos intactos; actualiza os dados dinâmicos da poll.
