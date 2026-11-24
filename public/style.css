@@ -426,23 +426,18 @@ button.active{outline-color:var(--acid)}
 @media(max-width:700px){.join-qr{right:2vw;bottom:2vh;gap:7px;padding:7px}.join-qr-copy small{font-size:8px}.join-qr-copy strong{font-size:11px}.projector-qr{width:76px;height:76px;padding:2px}.projector-qr img,.projector-qr canvas{width:72px!important;height:72px!important}}
 
 
-/* QR corner tag — neo-brutalist angled sticker */
-.join-qr{
- top:2.2vh;right:2.2vw;bottom:auto;
- transform:rotate(3deg);
- transform-origin:top right;
- gap:12px;padding:11px 12px 11px 15px;
- background:#f0c978;color:#171716;
- border:3px solid #171716;
- box-shadow:6px 6px 0 #c52d4b,9px 9px 0 #171716;
-}
-.join-qr-copy small{color:#171716;font-weight:700}
-.join-qr-copy strong{color:#171716}
-.projector-qr{border:2px solid #171716}
-@media(max-width:700px){
- .join-qr{top:1.5vh;right:3vw;bottom:auto;transform:rotate(2.5deg);gap:6px;padding:6px;border-width:2px;box-shadow:4px 4px 0 #c52d4b,6px 6px 0 #171716}
-}
-
 /* Ensure the participation QR stays above the projector layout in M1/M2 */
 .room-screen .join-qr.visible{display:flex!important;position:fixed!important;top:2.2vh!important;right:2.2vw!important;bottom:auto!important;z-index:9999!important}
 .room-screen.moment-call .join-qr{display:none!important}
+
+/* Small angled sticker placement — preserve the existing QR popup design */
+.room-screen .join-qr.visible{
+ top:2.2vh;
+ right:2.2vw;
+ bottom:auto;
+ transform:rotate(2deg);
+ transform-origin:top right;
+}
+@media(max-width:700px){
+ .room-screen .join-qr.visible{top:1.5vh;right:2vw;bottom:auto;transform:rotate(2deg)}
+}
