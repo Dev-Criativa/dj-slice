@@ -36,6 +36,8 @@ async function draw(){
     if(!response.ok) throw new Error('Evento indisponível');
     const data=await response.json();
     const moment=data.event.activeMoment;
+    el('event-brand').textContent=data.event.title;
+    document.title=data.event.title+' — Projecção';
     el('moment').textContent=moment.toUpperCase();
     el('dashboard').hidden=moment==='m3'||moment==='m4';
 
