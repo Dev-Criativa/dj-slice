@@ -61,10 +61,10 @@ async function draw(){
       renderMessages(data.messages);
     }else if(moment==='m3'){
       el('headline').innerHTML='MIDNIGHT<br><em>SLICE.</em>';
-      el('body').textContent='É HORA DA FATIA. VAI BUSCAR A TUA!';
+      el('body').textContent='A PIZZA ESTÁ SERVIDA. VAI BUSCAR A TUA FATIA.';
     }else{
       el('headline').innerHTML='TURN ON<br><em>THE LIGHTS.</em>';
-      el('body').textContent='TELEMÓVEIS NO AR. ACENDE A LANTERNA!';
+      el('body').textContent='LIGA A LANTERNA DO TEU TELEMÓVEL.';
     }
   }catch(error){el('body').textContent='À espera de ligação ao evento…'}
 }
