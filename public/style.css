@@ -147,3 +147,104 @@ button.active{outline-color:var(--acid)}
  .mobile header{margin-bottom:28px}
  .mobile h1{font-size:clamp(52px,15vw,78px)}
 }
+
+
+/* Focus pass: public mobile (Guest) and Projector */
+.mobile{
+ width:min(100%,620px);min-height:100svh;padding:0 20px 34px;
+ display:flex;flex-direction:column
+}
+.mobile header{
+ height:62px;flex:none;margin-bottom:clamp(30px,7vh,58px);
+ border-bottom:1px solid rgba(240,201,120,.32)
+}
+.mobile header b{font-size:19px;letter-spacing:-.04em}
+.mobile header small{font-size:10px}
+.mobile #title{
+ font-size:clamp(54px,14vw,82px);line-height:.82;letter-spacing:-.085em;
+ text-transform:uppercase;max-width:540px;margin:0 0 16px
+}
+.mobile #intro{
+ color:var(--acid);font:11px 'DM Mono';letter-spacing:.06em;
+ text-transform:uppercase;line-height:1.5;margin:0 0 18px
+}
+.mobile #content.panel{
+ margin:0;padding:clamp(18px,5vw,28px);
+ border:1px solid rgba(240,201,120,.3);
+ background:linear-gradient(145deg,rgba(53,49,43,.97),rgba(29,28,26,.97));
+ box-shadow:0 18px 50px rgba(0,0,0,.3)
+}
+.mobile #content h2{
+ font-size:clamp(23px,6vw,34px);line-height:.98;letter-spacing:-.06em;
+ text-transform:uppercase;margin:4px 0 16px
+}
+.mobile #content hr{border:0;border-top:1px solid rgba(240,201,120,.25);margin:26px 0}
+.mobile input,.mobile textarea{
+ border-radius:0;background:#171716;border:1px solid #62594d;
+ min-height:48px;padding:14px;font-size:16px
+}
+.mobile textarea{min-height:112px;resize:vertical}
+.mobile button{
+ min-height:46px;padding:13px 17px;border-radius:0;
+ font-size:11px;letter-spacing:.09em
+}
+.mobile #poll-options{display:grid;gap:9px;margin:18px 0}
+.mobile .option{
+ min-height:58px;padding:16px 18px;border:1px solid #6a5b48;
+ background:#302d29;color:var(--fg);font:600 16px 'Space Grotesk';
+ text-transform:none;letter-spacing:0
+}
+.mobile .option:active,.mobile .option:focus-visible{
+ background:var(--acid);color:#211b14;outline:0
+}
+.mobile .poll-empty{color:var(--muted);font-size:14px;line-height:1.4}
+.mobile #results{font-size:13px;color:var(--muted);line-height:1.5;margin-top:12px}
+
+/* Projector: poster-scale typography and a clear live-show dashboard */
+.room-screen{
+ padding:3.5vh 4vw 4vh;
+ grid-template-rows:auto auto auto minmax(0,1fr);
+ gap:1.8vh
+}
+.room-header{padding:0 0 14px}
+.room-header b{font-size:clamp(18px,1.8vw,28px);letter-spacing:-.04em}
+.room-header small{font-size:clamp(11px,1.05vw,16px)}
+.room-screen h1{
+ font-size:clamp(58px,8.2vw,132px);line-height:.78;
+ letter-spacing:-.09em;text-transform:uppercase;
+ max-width:95%;margin:1vh 0 .5vh
+}
+.room-screen h1 em{color:var(--red)}
+.room-screen #body{
+ font:clamp(14px,1.35vw,21px) 'DM Mono';
+ letter-spacing:.015em;text-transform:uppercase;color:#d0c7b9
+}
+.room-dashboard{gap:1.5vw}
+.room-panel{
+ position:relative;padding:2.2vh 2vw;
+ background:rgba(30,29,27,.88);
+ border:1px solid rgba(240,201,120,.28)
+}
+.room-panel>small{
+ font-size:clamp(11px,1.05vw,16px);letter-spacing:.14em;
+ border-bottom:1px solid rgba(240,201,120,.24);padding-bottom:12px
+}
+.room-ranking{grid-template-columns:2.1em minmax(0,1fr) auto;gap:14px}
+.room-ranking>b{font-size:clamp(22px,2.6vw,40px)}
+.room-ranking strong{font-size:clamp(18px,2vw,30px)}
+.room-ranking span,.room-ranking em{font-size:clamp(12px,1.15vw,17px)}
+.room-message{font-size:clamp(18px,1.9vw,29px);line-height:1.08}
+.room-message span{font-size:clamp(11px,1.05vw,16px);margin-top:8px}
+.room-poll-option{gap:10px}
+.room-poll-meta{font-size:clamp(17px,1.8vw,27px)}
+.room-poll-meta span{font-size:clamp(12px,1.1vw,17px)}
+.room-bar{height:12px}
+.room-empty{font:clamp(14px,1.3vw,20px) 'DM Mono';text-transform:uppercase}
+@media(max-width:700px){
+ .mobile{padding:0 16px 26px}
+ .mobile #title{font-size:clamp(52px,16vw,76px)}
+ .room-screen{padding:2vh 3vw;gap:1vh}
+ .room-screen h1{font-size:clamp(38px,9vw,64px)}
+ .room-screen #body{font-size:clamp(10px,2.3vw,14px)}
+ .room-panel{padding:1.2vh 1.5vw}
+}
