@@ -322,3 +322,22 @@ button.active{outline-color:var(--acid)}
  .room-track-line em{font-size:11px}
  .room-track-info{gap:5px}
 }
+
+/* Compact projector ranking: five tight rows, legible at a distance */
+#primary-content{display:flex;flex-direction:column;gap:clamp(8px,.9vh,13px)}
+#primary-panel .room-ranking{display:grid;grid-template-columns:1.8em minmax(0,1fr);gap:10px;align-items:center;margin:0;padding:0;min-height:0}
+#primary-panel .room-ranking>b{font-size:clamp(19px,2vw,29px);line-height:1;color:var(--acid)}
+#primary-panel .room-track-info{gap:5px;min-width:0}
+#primary-panel .room-track-line{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto auto;column-gap:12px;row-gap:1px;align-items:baseline}
+#primary-panel .room-track-line strong{grid-column:1;grid-row:1;font-size:clamp(16px,1.55vw,23px);line-height:1.05}
+#primary-panel .room-track-line span{grid-column:1;grid-row:2;font-size:clamp(10px,.85vw,13px);line-height:1.05}
+#primary-panel .room-track-line em{grid-column:2;grid-row:1 / span 2;font-size:clamp(11px,.95vw,14px);line-height:1;align-self:center}
+#primary-panel .room-track-bar{height:6px}
+@media(max-width:700px){
+ #primary-content{gap:7px}
+ #primary-panel .room-ranking{grid-template-columns:1.5em minmax(0,1fr);gap:7px}
+ #primary-panel .room-track-line strong{font-size:14px}
+ #primary-panel .room-track-line span{font-size:10px}
+ #primary-panel .room-track-line em{font-size:10px}
+ #primary-panel .room-track-bar{height:5px}
+}
