@@ -1,1 +1,23 @@
-<!doctype html><html lang="pt-PT"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Room Display</title><link rel="stylesheet" href="/style.css"><main class="screen"><small id="moment">M1</small><h1 id="headline">Room Display</h1><div id="body">A aguardar o momento activo.</div><div id="feed"></div></main><script src="/room.js"></script></html>
+<!doctype html>
+<html lang="pt-PT">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DJ Slice — Projecção</title>
+<link rel="stylesheet" href="/style.css">
+<main class="screen room-screen">
+  <header class="room-header"><b>DJ SLICE<span>.</span></b><small id="moment">M1</small></header>
+  <h1 id="headline">A festa também é do público.</h1>
+  <div id="body">A aguardar o momento activo.</div>
+  <section id="dashboard" class="room-dashboard">
+    <article class="room-panel" id="primary-panel">
+      <small id="primary-label">TOP MÚSICAS</small>
+      <div id="primary-content"></div>
+    </article>
+    <article class="room-panel" id="messages-panel">
+      <small>MENSAGENS DO PÚBLICO</small>
+      <div id="messages-content"></div>
+    </article>
+  </section>
+</main>
+<script src="/room.js"></script>
+</html>
