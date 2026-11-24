@@ -17,7 +17,7 @@ export default {async fetch(req,env){
  const aliases={"/qr":"/qr.html","/guest":"/guest.html","/admin":"/admin.html","/room":"/room.html"};
  if(aliases[p]){u.pathname=aliases[p];return env.ASSETS.fetch(new Request(u,req));}
  if(!p.startsWith("/api/"))return env.ASSETS.fetch(req);
- if(p==="/api/login"&&req.method==="POST"){const b=await req.json();return String(b.pin)===env.ADMIN_PIN?J({token:env.ADMIN_TOKEN}):J({error:"PIN incorrecto"},401)}
+ if(p==="/api/login"&&req.method==="POST"){const b=await req.json();return String(b.pin)===env.ADMIN_PIN&&!!env.ADMIN_TOKEN?J({token:env.ADMIN_TOKEN}):J({error:"PIN incorrecto ou autenticação não configurada"},401)}
  const m=p.match(/^\/api\/([A-Z0-9_-]+)\/(.*)$/i);if(!m)return J({error:"Endpoint inválido"},404);
  const e=await event(env,m[1]);if(!e)return J({error:"Evento não encontrado"},404);
  const a=m[2],key=req.headers.get("x-voter-key")||"";
@@ -28,9 +28,35 @@ export default {async fetch(req,env){
  if(a==="tracks"&&req.method==="POST"){const b=await req.json();if(e.active_moment!=="m1")return J({error:"Sugestões fechadas"},409);if(b.source!=="tidal"||!b.tidalId)return J({error:"A faixa tem de vir da pesquisa TIDAL"},400);await env.DB.prepare("INSERT OR IGNORE INTO tracks(event_id,tidal_id,title,artist,album,artwork_url) VALUES(?,?,?,?,?,?)").bind(e.id,clean(b.tidalId,100),clean(b.title,180),clean(b.artist,180),clean(b.album,180),clean(b.artworkUrl,500)).run();return J({ok:true})}
  if(a.startsWith("track/")&&a.endsWith("/vote")&&req.method==="POST"){if(!key)return J({error:"Voter key em falta"},400);if(e.active_moment!=="m1")return J({error:"Votação fechada"},409);const id=Number(a.split("/")[1]);await env.DB.prepare("INSERT OR IGNORE INTO track_votes(track_id,voter_key) SELECT id,? FROM tracks WHERE id=? AND event_id=?").bind(key,id,e.id).run();await env.DB.prepare("UPDATE tracks SET votes=(SELECT COUNT(*) FROM track_votes WHERE track_id=?) WHERE id=?").bind(id,id).run();return J({ok:true})}
  if(!await admin(req,env))return J({error:"Acesso admin necessário"},401);
- if(a==="admin"&&req.method==="GET"){const r=await env.DB.prepare("SELECT id,guest_name,body,status FROM messages WHERE event_id=? AND status='pending' ORDER BY id").bind(e.id).all();return J({pending:r.results})}
+ if(a==="admin"&&req.method==="GET"){
+   const [pending,all]=await Promise.all([
+     env.DB.prepare("SELECT id,guest_name,body,status,created_at FROM messages WHERE event_id=? AND status='pending' ORDER BY id DESC").bind(e.id).all(),
+     env.DB.prepare("SELECT id,guest_name,body,status,created_at FROM messages WHERE event_id=? ORDER BY id DESC LIMIT 300").bind(e.id).all()
+   ]);
+   return J({pending:pending.results,messages:all.results});
+ }
  if(a==="moment"&&req.method==="POST"){const b=await req.json();if(!["m1","m2","m3","m4"].includes(b.moment))return J({error:"Momento inválido"},400);await env.DB.prepare("UPDATE events SET active_moment=? WHERE id=?").bind(b.moment,e.id).run();return J({ok:true})}
- if(a.startsWith("message/")&&req.method==="PATCH"){const id=Number(a.split("/")[1]),b=await req.json();if(!["published","rejected","hidden"].includes(b.status))return J({error:"Estado inválido"},400);await env.DB.prepare("UPDATE messages SET status=? WHERE id=? AND event_id=?").bind(b.status,id,e.id).run();return J({ok:true})}
+ if(a.startsWith("message/")&&req.method==="PATCH"){
+   const id=Number(a.split("/")[1]),b=await req.json();
+   if(!Number.isInteger(id)||id<1)return J({error:"Mensagem inválida"},400);
+   if(b.status!==undefined&&!["pending","published","rejected","hidden"].includes(b.status))return J({error:"Estado inválido"},400);
+   if(b.body!==undefined||b.guest_name!==undefined){
+     const current=await env.DB.prepare("SELECT id FROM messages WHERE id=? AND event_id=?").bind(id,e.id).first();
+     if(!current)return J({error:"Mensagem não encontrada"},404);
+     const body=b.body===undefined?null:clean(b.body,240),name=b.guest_name===undefined?null:clean(b.guest_name,40);
+     if(body!==null&&body.length<2)return J({error:"A mensagem tem de ter pelo menos 2 caracteres"},400);
+     if(body!==null)await env.DB.prepare("UPDATE messages SET body=? WHERE id=? AND event_id=?").bind(body,id,e.id).run();
+     if(name!==null)await env.DB.prepare("UPDATE messages SET guest_name=? WHERE id=? AND event_id=?").bind(name||"Guest",id,e.id).run();
+   }
+   if(b.status!==undefined)await env.DB.prepare("UPDATE messages SET status=? WHERE id=? AND event_id=?").bind(b.status,id,e.id).run();
+   return J({ok:true});
+ }
+ if(a.startsWith("message/")&&req.method==="DELETE"){
+   const id=Number(a.split("/")[1]);
+   if(!Number.isInteger(id)||id<1)return J({error:"Mensagem inválida"},400);
+   const result=await env.DB.prepare("DELETE FROM messages WHERE id=? AND event_id=?").bind(id,e.id).run();
+   return result.meta.changes?J({ok:true}):J({error:"Mensagem não encontrada"},404);
+ }
  if(a==="poll"&&req.method==="POST"){const b=await req.json(),opts=(b.options||[]).map(x=>clean(x,80)).filter(Boolean).slice(0,5);if(opts.length<2)return J({error:"Poll precisa de duas opções"},400);await env.DB.prepare("UPDATE polls SET active=0 WHERE event_id=?").bind(e.id).run();const r=await env.DB.prepare("INSERT INTO polls(event_id,question,active) VALUES(?,?,1)").bind(e.id,clean(b.question,180)||"Choose your side").run();for(let i=0;i<opts.length;i++)await env.DB.prepare("INSERT INTO poll_options(poll_id,label,sort_order) VALUES(?,?,?)").bind(r.meta.last_row_id,opts[i],i).run();return J({ok:true})}
  return J({error:"Acção não suportada"},404);
 }};
