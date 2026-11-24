@@ -1,6 +1,9 @@
 function esc(s=''){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 const code=new URLSearchParams(location.search).get('event')||'PARTY2026';
 const el=id=>document.getElementById(id);
+const guestUrl=location.origin+'/guest?event='+encodeURIComponent(code);
+let qrReady=false;
+function setupProjectorQR(){const box=el('projector-qr');if(!box||qrReady||!window.QRCode)return;if(!box.childElementCount){new QRCode(box,{text:guestUrl,width:116,height:116,colorDark:'#111111',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M});}qrReady=true;}
 
 function renderMessages(messages){
   const list=(messages||[]).slice(0,4);
@@ -43,6 +46,8 @@ async function draw(){
     if(!response.ok) throw new Error('Evento indisponível');
     const data=await response.json();
     const moment=data.event.activeMoment;
+    setupProjectorQR();
+    el('join-qr').classList.toggle('visible',moment==='m1'||moment==='m2');
     document.querySelector('.room-screen').classList.toggle('moment-call',moment==='m3'||moment==='m4');
     el('event-brand').textContent='PEDE & FATIA';
     document.title='PEDE & FATIA — Projecção';
