@@ -5,7 +5,7 @@ function renderPoll(poll) {
   const options = document.querySelector('#poll-options');
   if (!question || !options) return;
   question.textContent = poll?.question || 'A votação ainda não está disponível.';
-  const items = poll?.options || [];
+  const items = [...(poll?.options || [])].sort((a, b) => (Number(b.votes) || 0) - (Number(a.votes) || 0));
   options.innerHTML = items.length
     ? items.map(option => `<button class="option" data-id="${esc(option.id)}">${esc(option.label)}</button>`).join('')
     : '<p class="poll-empty">A votação ainda não tem opções. Aguarda que o DJ a configure.</p>';
