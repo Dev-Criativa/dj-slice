@@ -35,3 +35,12 @@ button.active{outline:2px solid var(--acid);outline-offset:3px}
 .item{padding:12px 0;border-bottom:1px solid var(--line)}
 .option{display:block;width:100%;text-align:left;background:#252525;color:white;border:1px solid var(--line)}
 @media(max-width:700px){.cards{grid-template-columns:1fr}main{padding:18px}.screen{padding:5vh 5vw}}
+
+.admin-tabs{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 24px}
+.admin-tabs button{margin:0}
+.message-item{padding:18px 0}
+.message-meta{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.message-meta small{color:var(--muted);text-transform:uppercase}
+.message-item p{white-space:pre-wrap;overflow-wrap:anywhere}
+.message-actions{display:flex;flex-wrap:wrap;gap:6px}
+.message-actions button{margin:2px 4px 2px 0}
