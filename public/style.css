@@ -248,3 +248,27 @@ button.active{outline-color:var(--acid)}
  .room-screen #body{font-size:clamp(10px,2.3vw,14px)}
  .room-panel{padding:1.2vh 1.5vw}
 }
+
+
+/* Projector M2: voting is the main stage (70%); messages become a 30% sidebar */
+.room-dashboard{grid-template-columns:minmax(0,7fr) minmax(260px,3fr);gap:1.4vw}
+#primary-panel{padding:2.8vh 2.6vw}
+#messages-panel{padding:2.2vh 1.8vw}
+#primary-panel>small{font-size:clamp(13px,1.25vw,19px);letter-spacing:.16em}
+#primary-panel .room-poll-option{gap:13px;margin:1.2vh 0}
+#primary-panel .room-poll-meta{font-size:clamp(22px,2.35vw,36px);line-height:1.05}
+#primary-panel .room-poll-meta span{font-size:clamp(15px,1.45vw,22px)}
+#primary-panel .room-bar{height:clamp(12px,1.25vw,19px)}
+#messages-panel>small{font-size:clamp(10px,.95vw,14px);letter-spacing:.12em}
+#messages-content{justify-content:flex-start;gap:2.2vh}
+#messages-panel .room-message{font-size:clamp(15px,1.35vw,21px);line-height:1.12;-webkit-line-clamp:4}
+#messages-panel .room-message span{font-size:clamp(10px,.9vw,13px)}
+@media(max-width:700px){
+ .room-dashboard{grid-template-columns:minmax(0,7fr) minmax(110px,3fr);gap:1.5vw}
+ #primary-panel{padding:1.4vh 2vw}
+ #messages-panel{padding:1.2vh 1.4vw}
+ #primary-panel .room-poll-meta{font-size:clamp(14px,3vw,21px)}
+ #primary-panel .room-poll-meta span{font-size:clamp(10px,2vw,14px)}
+ #primary-panel .room-bar{height:8px}
+ #messages-panel .room-message{font-size:clamp(10px,1.9vw,14px);-webkit-line-clamp:3}
+}
