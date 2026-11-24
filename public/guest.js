@@ -36,17 +36,8 @@ async function draw() {
     renderedMoment = moment;
 
     if (moment === 'm1') {
-      content.innerHTML = '<h2>Sugere uma música</h2><input id="q" placeholder="Artista ou música"><button id="search">PESQUISAR</button><div id="results"></div><hr><h2>Mural de mensagens</h2><input id="name" placeholder="O teu nome"><textarea id="msg" placeholder="Escreve uma mensagem"></textarea><button id="send">ENVIAR PARA APROVAÇÃO</button>';
-      document.querySelector('#search').onclick = async () => {
-        const query = document.querySelector('#q').value.trim();
-        if (!query) return;
-        const results = document.querySelector('#results');
-        results.textContent = 'A pesquisar…';
-        try {
-          const response = await api('tracks?q=' + encodeURIComponent(query));
-          results.textContent = response.error || 'A ligação ao catálogo TIDAL ainda não está activa.';
-        } catch (error) { results.textContent = error.message; }
-      };
+      content.innerHTML = '<h2>Sugere uma música</h2><div class="track-search"><input id="q" autocomplete="off" placeholder="Pesquisa por música ou artista"><div id="suggestions" class="track-suggestions"></div><div id="results" class="track-results"></div></div><hr><h2>Mural de mensagens</h2><input id="name" placeholder="O teu nome"><textarea id="msg" placeholder="Escreve uma mensagem"></textarea><button id="send">ENVIAR PARA APROVAÇÃO</button>';
+      bindTrackSearch();
       bindMessage();
     } else if (moment === 'm2') {
       content.innerHTML = '<h2 id="poll-question">A carregar votação…</h2><div id="poll-options"></div><hr><h2>Mural de mensagens</h2><input id="name" placeholder="O teu nome"><textarea id="msg" placeholder="Escreve uma mensagem"></textarea><button id="send">ENVIAR PARA APROVAÇÃO</button>';
@@ -60,6 +51,29 @@ async function draw() {
   } catch (error) {
     document.querySelector('#content').textContent = error.message;
   }
+}
+
+function bindTrackSearch(){
+ const input=document.querySelector('#q'),results=document.querySelector('#results'),suggestions=document.querySelector('#suggestions');
+ let timer=null,lastQuery='',requestId=0;
+ async function search(){
+  const q=input.value.trim();if(q.length<2){results.innerHTML='';suggestions.innerHTML='';return}
+  const id=++requestId;lastQuery=q;results.innerHTML='<p class="search-status">A procurar na TIDAL…</p>';
+  try{
+   const data=await api('tracks?q='+encodeURIComponent(q));
+   if(id!==requestId||input.value.trim()!==lastQuery)return;
+   suggestions.innerHTML=(data.suggestions||[]).map(s=>'<button type="button" class="suggestion" data-query="'+esc(s)+'">'+esc(s)+'</button>').join('');
+   suggestions.querySelectorAll('[data-query]').forEach(b=>b.onclick=()=>{input.value=b.dataset.query;search()});
+   results.innerHTML=(data.results||[]).length?(data.results||[]).map(t=>'<button type="button" class="track-result" data-track="'+esc(JSON.stringify(t))+'"><strong>'+esc(t.title)+'</strong><span>'+esc(t.artist)+'</span></button>').join(''):'<p class="search-status">Não encontrámos resultados. Experimenta outro termo.</p>';
+   results.querySelectorAll('[data-track]').forEach(b=>b.onclick=async()=>{
+    const t=JSON.parse(b.dataset.track);b.disabled=true;b.classList.add('selected');
+    try{await api('tracks',{method:'POST',body:JSON.stringify({source:'tidal',tidalId:t.tidalId,title:t.title,artist:t.artist,album:t.album})});b.innerHTML='<strong>'+esc(t.title)+'</strong><span>Adicionada à lista ✓</span>'}
+    catch(error){b.disabled=false;alert(error.message)}
+   });
+  }catch(error){if(id===requestId)results.innerHTML='<p class="search-status">'+esc(error.message)+'</p>'}
+ }
+ input.addEventListener('input',()=>{clearTimeout(timer);timer=setTimeout(search,320)});
+ input.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();clearTimeout(timer);search()}});
 }
 
 function bindMessage() {
