@@ -283,3 +283,26 @@ button.active{outline-color:var(--acid)}
 .track-result span{font:11px 'DM Mono';color:var(--muted)}
 .track-result.selected{border-color:var(--acid)}
 .search-status{font:12px 'DM Mono';color:var(--muted);line-height:1.5}
+
+
+/* Guest music search: compact, readable results and explicit confirmation */
+.mobile #content h2{font-size:clamp(21px,5.4vw,29px);line-height:1.05;letter-spacing:-.045em}
+.mobile #content hr{margin:19px 0}
+.track-results{gap:5px;margin:8px 0}
+.track-result{min-height:0;padding:10px 13px;gap:2px;border-radius:2px;background:rgba(47,44,40,.92);border-color:#5d554b}
+.track-result strong{font:600 16px/1.2 'Space Grotesk';letter-spacing:-.015em}
+.track-result span{font:12px/1.25 'Space Grotesk';letter-spacing:.025em;color:#c2bbae}
+.track-result.selected{border-color:var(--acid);opacity:.7}
+.track-suggestions{gap:5px;margin:6px 0}
+.suggestion{font:11px 'Space Grotesk';letter-spacing:0;min-height:30px;padding:6px 9px}
+.search-status{font:13px 'Space Grotesk';line-height:1.4}
+.track-confirm{position:fixed;inset:0;z-index:1000;display:none;align-items:center;justify-content:center;padding:22px;background:rgba(0,0,0,.78);backdrop-filter:blur(7px)}
+.track-confirm.visible{display:flex}
+.track-confirm-card{width:min(100%,440px);padding:26px;background:#242321;border:1px solid rgba(240,201,120,.55);box-shadow:0 22px 70px rgba(0,0,0,.55)}
+.track-confirm-kicker{font:11px 'DM Mono';letter-spacing:.12em;color:var(--acid);margin:0 0 18px}
+.track-confirm-card h3{font:700 clamp(24px,6vw,32px)/1.05 'Space Grotesk';letter-spacing:-.045em;margin:0 0 8px}
+.track-confirm-artist{font:15px 'Space Grotesk';color:#c2bbae;margin:0 0 25px}
+.track-confirm-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.track-confirm-actions button{min-height:48px;margin:0}
+.track-confirm-actions .secondary{background:transparent;color:var(--fg);border:1px solid #62584c}
+@media(max-width:700px){.track-result strong{font-size:15px}.track-result span{font-size:12px}.track-confirm-card{padding:22px}}
