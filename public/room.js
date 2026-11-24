@@ -43,6 +43,7 @@ async function draw(){
     if(!response.ok) throw new Error('Evento indisponível');
     const data=await response.json();
     const moment=data.event.activeMoment;
+    document.querySelector('.room-screen').classList.toggle('moment-call',moment==='m3'||moment==='m4');
     el('event-brand').textContent='PEDE & FATIA';
     document.title='PEDE & FATIA — Projecção';
     el('moment').textContent=moment.toUpperCase();
@@ -60,10 +61,10 @@ async function draw(){
       renderMessages(data.messages);
     }else if(moment==='m3'){
       el('headline').innerHTML='MIDNIGHT<br><em>SLICE.</em>';
-      el('body').textContent='A pizza está servida. Vai buscar uma fatia.';
+      el('body').textContent='É HORA DA FATIA. VAI BUSCAR A TUA!';
     }else{
       el('headline').innerHTML='TURN ON<br><em>THE LIGHTS.</em>';
-      el('body').textContent='Liga a lanterna do teu telemóvel.';
+      el('body').textContent='TELEMÓVEIS NO AR. ACENDE A LANTERNA!';
     }
   }catch(error){el('body').textContent='À espera de ligação ao evento…'}
 }
