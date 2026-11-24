@@ -55,6 +55,19 @@ async function draw() {
   }
 }
 
+function showTrackConfirm(track,onConfirm){
+ let modal=document.querySelector('#track-confirm');
+ if(!modal){
+  modal=document.createElement('div');modal.id='track-confirm';modal.className='track-confirm';modal.innerHTML='<div class="track-confirm-card" role="dialog" aria-modal="true" aria-labelledby="track-confirm-title"><p class="track-confirm-kicker">CONFIRMAR SUGESTÃO</p><h3 id="track-confirm-title"></h3><p class="track-confirm-artist"></p><div class="track-confirm-actions"><button type="button" class="secondary" id="track-back">VOLTAR</button><button type="button" id="track-confirm-yes">CONFIRMAR</button></div></div>';document.body.appendChild(modal);
+ }
+ modal.querySelector('h3').textContent=track.title;
+ modal.querySelector('.track-confirm-artist').textContent=track.artist;
+ modal.classList.add('visible');
+ const back=modal.querySelector('#track-back'),yes=modal.querySelector('#track-confirm-yes');
+ back.onclick=()=>modal.classList.remove('visible');
+ yes.onclick=async()=>{yes.disabled=true;try{await onConfirm();modal.classList.remove('visible')}catch(error){alert(error.message)}finally{yes.disabled=false}};
+ modal.onclick=e=>{if(e.target===modal)modal.classList.remove('visible')};
+}
 function bindTrackSearch(){
  const input=document.querySelector('#q'),results=document.querySelector('#results'),suggestions=document.querySelector('#suggestions');
  let timer=null,lastQuery='',requestId=0;
@@ -67,10 +80,12 @@ function bindTrackSearch(){
    suggestions.innerHTML=(data.suggestions||[]).map(s=>'<button type="button" class="suggestion" data-query="'+esc(s)+'">'+esc(s)+'</button>').join('');
    suggestions.querySelectorAll('[data-query]').forEach(b=>b.onclick=()=>{input.value=b.dataset.query;search()});
    results.innerHTML=(data.results||[]).length?(data.results||[]).map(t=>'<button type="button" class="track-result" data-track="'+esc(JSON.stringify(t))+'"><strong>'+esc(t.title)+'</strong><span>'+esc(t.artist)+'</span></button>').join(''):'<p class="search-status">Não encontrámos resultados. Experimenta outro termo.</p>';
-   results.querySelectorAll('[data-track]').forEach(b=>b.onclick=async()=>{
-    const t=JSON.parse(b.dataset.track);b.disabled=true;b.classList.add('selected');
-    try{await api('tracks',{method:'POST',body:JSON.stringify({source:'tidal',tidalId:t.tidalId,title:t.title,artist:t.artist,album:t.album})});b.innerHTML='<strong>'+esc(t.title)+'</strong><span>Adicionada à lista ✓</span>'}
-    catch(error){b.disabled=false;alert(error.message)}
+   results.querySelectorAll('[data-track]').forEach(b=>b.onclick=()=>{
+    const t=JSON.parse(b.dataset.track);
+    showTrackConfirm(t,async()=>{
+     await api('tracks',{method:'POST',body:JSON.stringify({source:'tidal',tidalId:t.tidalId,title:t.title,artist:t.artist,album:t.album})});
+     b.disabled=true;b.classList.add('selected');b.innerHTML='<strong>'+esc(t.title)+'</strong><span>Adicionada à lista ✓</span>';
+    });
    });
   }catch(error){if(id===requestId)results.innerHTML='<p class="search-status">'+esc(error.message)+'</p>'}
  }
