@@ -1,15 +1,18 @@
-name = "event-engine"
+name = "dj-slice"
 main = "src/index.js"
 compatibility_date = "2026-11-24"
+
 [assets]
 directory = "./public"
 binding = "ASSETS"
 run_worker_first = ["/api/*"]
+
 [[d1_databases]]
 binding = "DB"
-database_name = "event-engine-db"
-database_id = "REPLACE_WITH_D1_DATABASE_ID"
+database_name = "dj-slice-db"
+database_id = "2e33efb6-f8be-4e76-8e77-ecea4f5aa138"
 migrations_dir = "migrations"
+
 [vars]
 EVENT_CODE = "PARTY2026"
 EVENT_TITLE = "Your Event"
