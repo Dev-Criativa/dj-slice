@@ -20,3 +20,4 @@ URLs: `/screen.html?event=PARTY2026`, `/guest.html?event=PARTY2026`, `/admin.htm
 
 ## Not yet production-complete
 TIDAL catalogue search is deliberately not faked; the exact API endpoint and access entitlement must be confirmed for the registered TIDAL app. Guest-side track search therefore reports that the integration is pending. This scaffold uses polling for screen refresh rather than WebSockets. Timers are not yet wired to the admin UI. Harden admin authentication, rate limits, message abuse controls, and event provisioning before a public event.
+--- and good night to y'all
