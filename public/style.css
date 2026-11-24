@@ -272,3 +272,14 @@ button.active{outline-color:var(--acid)}
  #primary-panel .room-bar{height:8px}
  #messages-panel .room-message{font-size:clamp(10px,1.9vw,14px);-webkit-line-clamp:3}
 }
+
+.track-search{position:relative}
+.track-suggestions{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.track-suggestions:empty{display:none}
+.suggestion{background:transparent;color:var(--acid);border:1px solid rgba(240,201,120,.35);min-height:34px;padding:7px 10px;font-size:10px}
+.track-results{display:grid;gap:7px;margin:10px 0}
+.track-result{display:flex;flex-direction:column;align-items:flex-start;gap:4px;width:100%;min-height:58px;padding:12px 14px;background:#302d29;color:var(--fg);border:1px solid #5b5146;text-align:left;letter-spacing:0}
+.track-result strong{font:600 15px 'Space Grotesk'}
+.track-result span{font:11px 'DM Mono';color:var(--muted)}
+.track-result.selected{border-color:var(--acid)}
+.search-status{font:12px 'DM Mono';color:var(--muted);line-height:1.5}
