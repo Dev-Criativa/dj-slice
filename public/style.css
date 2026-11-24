@@ -82,3 +82,68 @@ html:has(.room-screen),body:has(.room-screen){width:100%;height:100%;overflow:hi
  .room-ranking span,.room-ranking em{font-size:10px}
  .room-message{font-size:clamp(11px,2.2vw,15px)}
 }
+
+
+/* DJ Slice — visual language from the party poster */
+:root{
+ --bg:#171716;--panel:#242321;--line:#45413c;--fg:#f6f2e9;--muted:#b7b0a5;
+ --acid:#f0c978;--red:#c52d4b;--pizza:#e9c99a;--vinyl:#080909
+}
+html{background:var(--bg)}
+body{
+ position:relative;isolation:isolate;min-height:100vh;
+ background:
+  radial-gradient(ellipse at 50% 45%,rgba(255,255,255,.035),transparent 55%),
+  #171716;
+ color:var(--fg)
+}
+body:before{
+ content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.9;
+ background:
+  /* stage spotlights */
+  linear-gradient(155deg,transparent 0 18%,rgba(205,202,192,.10) 18.2%,rgba(205,202,192,.035) 39%,transparent 39.2%),
+  linear-gradient(22deg,transparent 0 60%,rgba(205,202,192,.09) 60.2%,rgba(205,202,192,.025) 83%,transparent 83.2%),
+  /* vinyl records in opposite corners */
+  radial-gradient(circle at 0% 0%,#e9e8e5 0 3.1%,#777 3.2% 3.35%,#171717 3.5% 4.5%,#343434 4.6% 4.8%,#111 4.9% 6.1%,#303030 6.2% 6.4%,#111 6.5% 8%,transparent 8.1%),
+  radial-gradient(circle at 100% 100%,#e9e8e5 0 4%,#777 4.1% 4.25%,#171717 4.4% 5.7%,#343434 5.8% 6%,#111 6.1% 7.7%,#303030 7.8% 8%,#111 8.1% 10%,transparent 10.1%);
+}
+body:after{
+ content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.16;
+ background-image:
+  radial-gradient(ellipse at center,transparent 0 60%,#aaa 61%,transparent 63%),
+  radial-gradient(ellipse at center,transparent 0 60%,#aaa 61%,transparent 63%);
+ background-size:125px 125px,190px 190px;
+ background-position:24px 42px,80px 110px;
+ mask-image:linear-gradient(135deg,black,transparent 55%,black)
+}
+main, .room-screen{position:relative}
+.brand,b{color:var(--fg)}
+.brand span,b span{color:var(--red)}
+.eyebrow,small,label{color:var(--acid)}
+h1{font-weight:700;letter-spacing:-.075em}
+h1 em{color:var(--red)}
+.cards a,.panel,.room-panel{
+ background:rgba(35,34,32,.92);border:1px solid rgba(240,201,120,.22);
+ box-shadow:0 12px 36px rgba(0,0,0,.16)
+}
+header{border-bottom-color:rgba(240,201,120,.25)}
+input,textarea{background:#171716;border-color:#514a41}
+button{background:var(--acid);color:#211b14;font-weight:700}
+button.secondary{border-color:#62584c}
+button.danger{color:#ff7c83;border-color:#743744}
+button.active{outline-color:var(--acid)}
+.option{background:#302d29;border-color:#5b5146}
+.item{border-bottom-color:#514a41}
+.qr-box{border:8px solid #f6f2e9;box-shadow:0 0 0 1px #c9bda9}
+.room-screen{background:transparent}
+.room-header{border-bottom-color:rgba(240,201,120,.32)}
+.room-screen h1{letter-spacing:-.065em;text-transform:uppercase}
+.room-ranking>b,.room-ranking em,.room-poll-meta span{color:var(--acid)}
+.room-bar{background:#51483f}
+.room-bar i{background:var(--red)}
+.room-message span{color:var(--acid)}
+@media(max-width:700px){
+ body:before{background-size:auto}
+ .mobile header{margin-bottom:28px}
+ .mobile h1{font-size:clamp(52px,15vw,78px)}
+}
