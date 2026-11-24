@@ -430,14 +430,22 @@ button.active{outline-color:var(--acid)}
 .room-screen .join-qr.visible{display:flex!important;position:fixed!important;top:2.2vh!important;right:2.2vw!important;bottom:auto!important;z-index:9999!important}
 .room-screen.moment-call .join-qr{display:none!important}
 
-/* Small angled sticker placement — preserve the existing QR popup design */
+/* Projector QR sticker: single crisp QR image and the original warm red shadow */
 .room-screen .join-qr.visible{
  top:2.2vh;
  right:2.2vw;
  bottom:auto;
  transform:rotate(2deg) scale(1.3);
  transform-origin:top right;
+ box-shadow:8px 10px 0 rgba(197,45,75,.78), 14px 17px 28px rgba(0,0,0,.48);
 }
+.projector-qr img{display:block!important;width:108px!important;height:108px!important}
+.projector-qr canvas{display:none!important}
 @media(max-width:700px){
- .room-screen .join-qr.visible{top:1.5vh;right:2vw;bottom:auto;transform:rotate(2deg) scale(1.18)}
+ .room-screen .join-qr.visible{
+  top:1.5vh;right:2vw;bottom:auto;
+  transform:rotate(2deg) scale(1.18);
+  box-shadow:6px 7px 0 rgba(197,45,75,.78), 10px 12px 20px rgba(0,0,0,.48);
+ }
+ .projector-qr img{width:72px!important;height:72px!important}
 }
