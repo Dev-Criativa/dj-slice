@@ -1,18 +1,40 @@
 (() => {
   const handImage = '/m4-hand.jpg';
   let cameraStream = null, torchOn = false;
+  let busy = false;
+  function stopStream(stream){stream?.getTracks().forEach(t=>t.stop());}
+  function torchError(e){
+    const n=e&&e.name;
+    if(n==='NotAllowedError'||n==='SecurityError')return 'NÃO FOI DADA AUTORIZAÇÃO À CÂMARA. NO IPHONE: TOCA EM "AA" NA BARRA DO ENDEREÇO → DEFINIÇÕES DO SITE → CÂMARA → PERMITIR. OU USA A LANTERNA DO TELEMÓVEL.';
+    if(n==='NotReadableError'||n==='AbortError')return 'A CÂMARA ESTÁ A SER USADA POR OUTRA APP. FECHA-A E TENTA DE NOVO, OU USA A LANTERNA DO TELEMÓVEL.';
+    if(n==='NotFoundError'||n==='OverconstrainedError')return 'ESTE TELEMÓVEL NÃO DEIXA O BROWSER CONTROLAR A LANTERNA. USA A LANTERNA DO TELEMÓVEL.';
+    return 'NÃO FOI POSSÍVEL ACENDER A LANTERNA'+(n?' ('+n+')':'')+'. USA A LANTERNA DO TELEMÓVEL.';
+  }
+  function setLabel(button,status,on){
+    button.classList.toggle('is-on',on);button.setAttribute('aria-pressed',String(on));
+    button.querySelector('.m4-button-label').textContent=on?'APAGAR A LANTERNA':'ACENDER A LANTERNA';
+    status.textContent=on?'A TUA LUZ ESTÁ LIGADA. FAZ PARTE DO MOMENTO!':'LANTERNA DESLIGADA.';
+  }
   async function setTorch(button, status) {
-    if (!navigator.mediaDevices?.getUserMedia) { status.textContent='Este navegador não permite controlar a lanterna. Usa o botão físico do telemóvel.'; return; }
+    if (busy) return;
+    if (!navigator.mediaDevices?.getUserMedia) { status.textContent='ESTE BROWSER NÃO CONTROLA A LANTERNA. USA A LANTERNA DO TELEMÓVEL.'; return; }
+    busy = true;
+    // Trabalha sempre com uma referência local: se o stream for parado a meio (mudança de momento),
+    // não rebenta por cameraStream passar a null.
+    let stream = cameraStream;
     try {
-      if (!cameraStream) cameraStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});
-      const track=cameraStream.getVideoTracks()[0], caps=track.getCapabilities?.()||{};
-      if (!caps.torch) { status.textContent='A lanterna não está disponível neste navegador. Usa o botão físico do telemóvel.'; cameraStream.getTracks().forEach(t=>t.stop()); cameraStream=null; return; }
-      torchOn=!torchOn; await track.applyConstraints({advanced:[{torch:torchOn}]});
-      button.classList.toggle('is-on',torchOn); button.setAttribute('aria-pressed',String(torchOn));
-      button.querySelector('.m4-button-label').textContent=torchOn?'APAGAR A LANTERNA':'ACENDER A LANTERNA';
-      status.textContent=torchOn?'A TUA LUZ ESTÁ LIGADA. FAZ PARTE DO MOMENTO!':'LANTERNA DESLIGADA.';
-      if(!torchOn){cameraStream.getTracks().forEach(t=>t.stop());cameraStream=null;}
-    } catch(e) { status.textContent='Não foi possível activar a lanterna. Verifica a autorização da câmara ou usa o botão físico.'; if(cameraStream)cameraStream.getTracks().forEach(t=>t.stop());cameraStream=null;torchOn=false; }
+      if (torchOn) { stopStream(stream); if (cameraStream===stream) cameraStream=null; torchOn=false; setLabel(button,status,false); return; }
+      if (!stream) { stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false}); cameraStream = stream; }
+      const track = stream.getVideoTracks()[0];
+      if (!track || track.readyState==='ended') throw Object.assign(new Error('track ended'),{name:'AbortError'});
+      const caps = track.getCapabilities?.() || {};
+      if ('torch' in caps && !caps.torch) { stopStream(stream); if (cameraStream===stream) cameraStream=null; status.textContent='ESTE TELEMÓVEL NÃO DEIXA O BROWSER CONTROLAR A LANTERNA. USA A LANTERNA DO TELEMÓVEL.'; return; }
+      await track.applyConstraints({advanced:[{torch:true}]});
+      torchOn = true; setLabel(button,status,true);
+    } catch (e) {
+      stopStream(stream); if (cameraStream===stream) cameraStream=null; torchOn=false;
+      status.textContent = torchError(e);
+    } finally { busy = false; }
   }
   function renderM4(){
     const content=document.querySelector('#content'); if(!content)return;

@@ -144,7 +144,9 @@ async function draw() {
       content.innerHTML = '<div class="device-call"><p>A AGUARDAR O PRÓXIMO MOMENTO.</p></div>';
     }
   } catch (error) {
-    renderedMoment = null;
+    // Falha pontual com um ecrã já desenhado: mantém o ecrã (não interrompe a lanterna do M4
+    // nem o que o convidado está a escrever) e tenta de novo na próxima actualização.
+    if (renderedMoment) return;
     document.querySelector('#content').textContent = error.message;
   }
 }
