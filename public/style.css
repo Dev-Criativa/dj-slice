@@ -631,3 +631,10 @@ button.active{outline-color:var(--acid)}
 .mobile .block-aura>h2{color:#ffb3c0}
 .mobile .block-poll+.block-aura::before{content:"AURA"}
 .mobile .block-aura #send{background:#d02e4c;color:#fff}
+/* Aura em verde WhatsApp (#25D366 / #128C7E / #075E54) */
+.mobile .block-aura{background:linear-gradient(180deg,rgba(37,211,102,.26),rgba(18,140,126,.10) 70%);border-color:rgba(37,211,102,.55);border-top-color:#25D366}
+.mobile .block-aura::before{color:#5ee08f}
+.mobile .block-aura>h2{color:#9cf0bb}
+.mobile .block-aura #send{background:#25D366;color:#06231a}
+.mobile .block-aura #send:disabled{background:#1b5e3d;color:#9cc7ae}
+.mobile .block-aura textarea,.mobile .block-aura input{background:rgba(6,20,14,.75);border-color:rgba(37,211,102,.35)}
