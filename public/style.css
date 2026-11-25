@@ -583,3 +583,11 @@ button.active{outline-color:var(--acid)}
 .room-poll-meta{align-items:flex-start}
 .room-poll-meta strong{white-space:normal!important;overflow:visible!important;text-overflow:clip!important;overflow-wrap:anywhere;line-height:1.1}
 .mobile .option{white-space:normal;overflow-wrap:anywhere;line-height:1.25;height:auto}
+
+/* M1: resultados da pesquisa com cor ligeiramente diferente do Top 5, para se perceber que é outra lista */
+.mobile #results:not(:empty){margin-top:10px;padding:10px 10px 4px;background:#1d1a15;border:1px solid rgba(240,201,120,.32);border-left:3px solid #f0c36e}
+.mobile #results:not(:empty)::before{content:"RESULTADOS DA PESQUISA";display:block;margin:0 0 8px;font:700 10px "DM Mono";letter-spacing:.18em;color:#f0c36e}
+.mobile #results .track-result{background:#3a3226;border-color:#7a6545}
+.mobile #results .track-result:hover,.mobile #results .track-result:focus-visible{border-color:#f0c36e}
+.mobile #results .search-status{margin:0 0 8px}
+.mobile #results:not(:empty){margin-bottom:18px}
