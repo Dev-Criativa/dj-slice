@@ -31,8 +31,8 @@ function djLogout() {
 function djPanel() {
   djRoot.innerHTML = `
     <div class="dj-now" id="dj-now"></div>
-    <div class="dj-head"><h2>Mais votadas</h2><small id="dj-updated"></small></div>
-    <ol class="dj-list" id="dj-queue"></ol>
+    <div class="dj-head"><h2>Votadas <span id="dj-count"></span></h2><small id="dj-updated"></small></div>
+    <div class="dj-scroll"><ol class="dj-list" id="dj-queue"></ol></div>
     <details class="dj-played"><summary>Tocadas <span id="dj-played-count"></span></summary><ol class="dj-list" id="dj-played"></ol></details>
     <p id="dj-error" class="dj-error" role="alert"></p>
     <button id="dj-logout" class="secondary">TERMINAR SESSÃO</button>`;
@@ -60,8 +60,15 @@ async function djLoad() {
     document.querySelector('#dj-now').innerHTML = now
       ? '<small>A TOCAR</small><div class="dj-now-track"><span class="dj-info"><strong>' + esc(now.title) + '</strong><em>' + esc(now.artist) + '</em></span><button class="secondary" data-act="played" data-id="' + now.id + '">TOCADA ✓</button></div>'
       : '<small>A TOCAR</small><p class="dj-empty">Nada marcado. Carrega em <b>A TOCAR</b> numa música da lista.</p>';
+    document.querySelector('#dj-count').textContent = '(' + d.queue.length + ')';
     document.querySelector('#dj-queue').innerHTML = d.queue.length
-      ? d.queue.map((t, i) => '<li class="dj-item">' + trackLine(t, i) + '<span class="dj-actions"><button data-act="playing" data-id="' + t.id + '">▶ A TOCAR</button><button class="secondary" data-act="played" data-id="' + t.id + '">TOCADA</button></span></li>').join('')
+      ? d.queue.map((t, i) => {
+          const playing = t.status === 'playing' || (now && now.id === t.id);
+          const actions = playing
+            ? '<button class="dj-done" data-act="played" data-id="' + t.id + '">✓ TOCADA</button><button class="secondary" data-act="queued" data-id="' + t.id + '">PARAR</button>'
+            : '<button data-act="playing" data-id="' + t.id + '">▶ A TOCAR</button><button class="secondary" data-act="played" data-id="' + t.id + '">TOCADA</button>';
+          return '<li class="dj-item' + (playing ? ' is-playing' : '') + '">' + trackLine(t, i) + (playing ? '<span class="dj-badge">A TOCAR</span>' : '') + '<span class="dj-actions">' + actions + '</span></li>';
+        }).join('')
       : '<li class="dj-empty">Ainda não há sugestões do público.</li>';
     document.querySelector('#dj-played-count').textContent = '(' + d.played.length + ')';
     document.querySelector('#dj-played').innerHTML = d.played.length
