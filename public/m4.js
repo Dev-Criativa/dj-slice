@@ -23,9 +23,12 @@
     const button=content.querySelector('.m4-torch-button'),status=content.querySelector('.m4-status');
     button.addEventListener('click',()=>setTorch(button,status));
   }
+  function stopM4(){if(cameraStream){cameraStream.getTracks().forEach(t=>t.stop());cameraStream=null;}torchOn=false;}
   window.renderM4=renderM4;
+  window.stopM4=stopM4;
   const observer=new MutationObserver(renderM4);
   function start(){const content=document.querySelector('#content');if(content){observer.observe(content,{childList:true,subtree:true});renderM4();}}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
-  document.addEventListener('visibilitychange',()=>{if(document.hidden&&cameraStream){cameraStream.getTracks().forEach(t=>t.stop());cameraStream=null;torchOn=false;}});
+  document.addEventListener('visibilitychange',()=>{if(document.hidden)stopM4();});
+  window.addEventListener('pagehide',stopM4);
 })();
