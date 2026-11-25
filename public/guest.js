@@ -52,6 +52,9 @@ async function draw() {
 
     // Mantém a interface e os campos intactos; actualiza os dados dinâmicos da poll.
     if (moment === renderedMoment) {
+      // Retry moment renderers if the API state arrived before their scripts loaded.
+      if (moment === 'm4' && content.dataset.m4Ready !== '1') window.renderM4?.();
+      if (moment === 'm5' && content.dataset.pizzaReady !== '1') window.renderPizza?.();
       if (moment === 'm2') renderPoll(d.poll, d.voting);
       if (moment === 'm1') renderMusicStatus(d.voting);
       return;
