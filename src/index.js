@@ -108,6 +108,11 @@ async function sha256(text){const d=await crypto.subtle.digest("SHA-256",new Tex
 function randomHex(bytes){return [...crypto.getRandomValues(new Uint8Array(bytes))].map(b=>b.toString(16).padStart(2,"0")).join("")}
 const DJ_SESSION_HOURS=24;
 // DJ: token do env (DJ_TOKEN), token do admin, ou uma sessão criada com o PIN definido no admin.
+// Opções da votação activa com o total de votos (todos os votos; sem a migração 0007, um por telemóvel).
+async function pollOptions(env,eventId){
+ try{return await env.DB.prepare("SELECT o.id,o.label,(SELECT COUNT(*) FROM poll_vote_events v WHERE v.option_id=o.id) votes FROM poll_options o JOIN polls p ON p.id=o.poll_id WHERE p.event_id=? AND p.active=1 ORDER BY o.sort_order").bind(eventId).all()}
+ catch{return await env.DB.prepare("SELECT o.id,o.label,(SELECT COUNT(*) FROM poll_votes v WHERE v.option_id=o.id) votes FROM poll_options o JOIN polls p ON p.id=o.poll_id WHERE p.event_id=? AND p.active=1 ORDER BY o.sort_order").bind(eventId).all()}
+}
 async function isDj(req,env,eventId){const t=req.headers.get("authorization")?.replace("Bearer ","");if(!t)return false;
  if((env.DJ_TOKEN&&t===env.DJ_TOKEN)||(env.ADMIN_TOKEN&&t===env.ADMIN_TOKEN))return true;
  try{return !!(await env.DB.prepare("SELECT 1 AS ok FROM dj_sessions WHERE token_hash=? AND event_id=? AND created_at>datetime('now',?)").bind(await sha256(t),eventId,"-"+DJ_SESSION_HOURS+" hours").first())}catch{return false}}
@@ -129,7 +134,7 @@ async function state(env,e,key,msgId=0){
  env.DB.prepare("SELECT id,guest_name,body FROM messages WHERE event_id=? AND status='published' ORDER BY id DESC LIMIT 25").bind(e.id).all(),
  queuedTracks(env,e.id,25),
  env.DB.prepare("SELECT * FROM polls WHERE event_id=? AND active=1 ORDER BY id DESC LIMIT 1").bind(e.id).first(),
- env.DB.prepare("SELECT o.id,o.label,(SELECT COUNT(*) FROM poll_votes v WHERE v.option_id=o.id) votes FROM poll_options o JOIN polls p ON p.id=o.poll_id WHERE p.event_id=? AND p.active=1 ORDER BY o.sort_order").bind(e.id).all()
+ pollOptions(env,e.id)
  ]);
  const [styleCooldown,musicCooldown,myVote]=await Promise.all([
   cooldownRemaining(env,e.id,key,"style_wars"),
@@ -174,7 +179,9 @@ export default {async fetch(req,env,ctx){
   if(!option)return J({error:"Essa opção já não pertence à votação activa. Actualiza a página."},400);
   const claim=await claimCooldown(env,e.id,key,"style_wars");
   if(!claim.ok)return cooldownError(claim.retryAfterSeconds);
+  // poll_votes guarda só a última escolha do telemóvel (para o ✓); poll_vote_events guarda cada voto (para os totais).
   await env.DB.prepare("INSERT INTO poll_votes(poll_id,option_id,voter_key) VALUES(?,?,?) ON CONFLICT(poll_id,voter_key) DO UPDATE SET option_id=excluded.option_id").bind(poll.id,option.id,key).run();
+  try{await env.DB.prepare("INSERT INTO poll_vote_events(poll_id,option_id,voter_key) VALUES(?,?,?)").bind(poll.id,option.id,key).run()}catch{}
   return J({ok:true,optionId:option.id});
  }
  if(a==="tracks"&&req.method==="GET"){
