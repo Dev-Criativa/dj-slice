@@ -45,15 +45,16 @@ async function draw(){
     const response=await fetch(`/api/${encodeURIComponent(code)}/state`,{cache:'no-store'});
     if(!response.ok) throw new Error('Evento indisponível');
     const data=await response.json();
-    const moment=String(data.event.activeMoment||'').toLowerCase().trim();
+    const rawMoment=String(data.event.activeMoment||'').toLowerCase().trim();
+    const moment=['m1','m2','m3','m4','m5'].includes(rawMoment)?rawMoment:'';
     const qr=el('join-qr');
     qr.classList.toggle('visible',moment==='m1'||moment==='m2');
     setupProjectorQR();
-    document.querySelector('.room-screen').classList.toggle('moment-call',moment==='m3'||moment==='m4'||moment==='m5');
+    document.querySelector('.room-screen').classList.toggle('moment-call',moment==='m3'||moment==='m4'||moment==='m5'||!moment);
     el('event-brand').textContent='PEDE & FATIA';
     document.title='PEDE & FATIA — Projecção';
     el('moment').textContent=moment.toUpperCase();
-    el('dashboard').hidden=moment==='m3'||moment==='m4'||moment==='m5';
+    el('dashboard').hidden=moment!=='m1'&&moment!=='m2';
 
     if(moment==='m1'){
       el('headline').innerHTML='O que toca<br><em>a seguir?</em>';
@@ -72,9 +73,12 @@ async function draw(){
     }else if(moment==='m4'){
       el('headline').innerHTML='TURN ON<br><em>THE LIGHTS.</em>';
       el('body').textContent='LIGA A LANTERNA DO TEU TELEMÓVEL.';
-    }else{
+    }else if(moment==='m5'){
       el('headline').innerHTML='GRAB A<br><em>PIZZA SLICE!</em>';
       el('body').textContent='TROCA UMA FICHA POR UMA FATIA.';
+    }else{
+      el('headline').innerHTML='PEDE<br><em>&amp; FATIA</em>';
+      el('body').textContent='A AGUARDAR O PRÓXIMO MOMENTO.';
     }
   }catch(error){el('body').textContent='À espera de ligação ao evento…'}
 }

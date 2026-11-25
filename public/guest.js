@@ -57,6 +57,7 @@ async function draw() {
       return;
     }
     renderedMoment = moment;
+    window.stopM4?.();
     delete content.dataset.m4Ready;
     delete content.dataset.pizzaReady;
     content.classList.remove('m4-content','pizza-content');
@@ -78,8 +79,11 @@ async function draw() {
       window.renderM4?.();
     } else if (moment === 'm5') {
       window.renderPizza?.();
+    } else {
+      content.innerHTML = '<div class="device-call"><p>A AGUARDAR O PRÓXIMO MOMENTO.</p></div>';
     }
   } catch (error) {
+    renderedMoment = null;
     document.querySelector('#content').textContent = error.message;
   }
 }
