@@ -70,7 +70,8 @@ async function draw() {
     } else if (moment === 'm3') {
       content.innerHTML = '<div class="device-call"><h2>MIDNIGHT<br><em>SLICE.</em></h2><p>A PIZZA ESTÁ SERVIDA. VAI BUSCAR A TUA FATIA.</p></div>';
     } else {
-      content.innerHTML = '<div class="device-call"><h2>TURN ON<br><em>THE LIGHTS.</em></h2><p>LIGA A LANTERNA DO TEU TELEMÓVEL.</p></div>';
+      content.innerHTML = '<div class="device-call" data-m4-trigger><h2>TURN ON<br><em>THE LIGHTS.</em></h2><p>LIGA A LANTERNA DO TEU TELEMÓVEL.</p></div>';
+      if (moment === 'm4') window.renderM4?.();
     }
   } catch (error) {
     document.querySelector('#content').textContent = error.message;
