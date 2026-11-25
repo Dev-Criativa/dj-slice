@@ -1,0 +1,10 @@
+# Projeto Cloudflare Pages "pede-e-fatia": só encaminha pedidos para o Worker dj-slice.
+# Publicar (raramente é preciso, só se este ficheiro ou o _worker.js mudarem):
+#   cd edge && npx wrangler pages deploy
+name = "pede-e-fatia"
+pages_build_output_dir = "./public"
+compatibility_date = "2026-11-24"
+
+[[services]]
+binding = "APP"
+service = "dj-slice"
