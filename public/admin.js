@@ -3,6 +3,19 @@ let token = sessionStorage.getItem('ee-admin');
 let moderationTimer = null;
 let activeTab = 'control';
 
+function openScreen(key) {
+  const ev = encodeURIComponent(CODE);
+  const targets = {
+    room: ['/room?event=' + ev, 'dj-slice-room', ''],
+    guest: ['/guest?event=' + ev + '&preview=1', 'dj-slice-guest-preview', 'popup,width=400,height=860'],
+    qr: ['/qr?event=' + ev, 'dj-slice-qr', ''],
+    dj: ['/dj?event=' + ev, 'dj-slice-dj', '']
+  };
+  const [url, name, features] = targets[key];
+  const w = window.open(url, name, features);
+  if (w) w.focus(); else alert('O browser bloqueou a janela. Permite pop-ups para este site.');
+}
+
 async function a(path, opt = {}) {
   return api(path, {...opt, headers:{...(opt.headers || {}), authorization:'Bearer ' + token}});
 }
@@ -70,25 +83,20 @@ function showTab(tab) {
           <div><strong>ECRÃ QR</strong><p>QR de entrada na festa, para um ecrã à porta.</p></div>
           <button class="secondary" data-open="qr">ABRIR ↗</button>
         </article>
-        <article class="item window-item is-soon">
-          <div><strong>DJ</strong><p>Ecrã do DJ. Em breve.</p></div>
-          <button class="secondary" disabled>EM BREVE</button>
+        <article class="item window-item">
+          <div><strong>DJ</strong><p>Top 15 mais votadas: o DJ marca "A tocar" (aparece no projector) e tira as que já tocaram. Entra com o PIN do DJ.</p></div>
+          <button data-open="dj">ABRIR ↗</button>
         </article>
       </div>`;
-    const ev = encodeURIComponent(CODE);
-    const targets = {
-      room: ['/room?event=' + ev, 'dj-slice-room', ''],
-      guest: ['/guest?event=' + ev + '&preview=1', 'dj-slice-guest-preview', 'popup,width=400,height=860'],
-      qr: ['/qr?event=' + ev, 'dj-slice-qr', '']
-    };
-    view.querySelectorAll('[data-open]').forEach(button => button.onclick = () => {
-      const [url, name, features] = targets[button.dataset.open];
-      const w = window.open(url, name, features);
-      if (w) w.focus(); else alert('O browser bloqueou a janela. Permite pop-ups para este site.');
-    });
+    view.querySelectorAll('[data-open]').forEach(button => button.onclick = () => openScreen(button.dataset.open));
   } else if (tab === 'control') {
     view.innerHTML = `
-      <h2>Momento activo</h2>
+      <div class="screen-shortcuts">
+        <button class="secondary" data-open="qr">ABRIR ECRÃ QR ↗</button>
+        <button class="secondary" data-open="room">ABRIR PROJECÇÃO ↗</button>
+        <button class="secondary" data-open="dj">ABRIR DJ ↗</button>
+      </div>
+      <hr><h2>Momento activo</h2>
       <div class="moment-controls">
         ${['m1','m2','m3','m4','m5'].map((moment,i) => `<button data-m="${moment}">M${i+1} · ${['MÚSICA','STYLE WARS','MIDNIGHT SLICE','LIGHTS','PIZZA'][i]}</button>`).join('')}
       </div>
@@ -96,6 +104,7 @@ function showTab(tab) {
       <input id="question" value="Que género ganha esta noite?">
       <input id="o1" value="HOUSE"><input id="o2" value="AFROBEATS"><input id="o3" value="TECHNO">
       <button id="save">GUARDAR VOTAÇÃO</button>`;
+    view.querySelectorAll('[data-open]').forEach(button => button.onclick = () => openScreen(button.dataset.open));
     view.querySelectorAll('[data-m]').forEach(button => button.onclick = async () => {
       try {
         await a('moment',{method:'POST',body:JSON.stringify({moment:button.dataset.m})});

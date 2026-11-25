@@ -55,15 +55,17 @@ let topTracksKey = '';
 function renderTopTracks(tracks, voting) {
   const box = document.querySelector('#top-tracks');
   if (!box) return;
+  const now = document.querySelector('#guest-now'), np = window.__nowPlaying;
+  if (now) { now.hidden = !np; now.textContent = np ? 'A TOCAR · ' + np.title + ' — ' + np.artist : ''; }
   const list = (tracks || []).slice(0, 5);
   const locked = (Number(voting?.musicRetryAfterSeconds) || 0) > 0;
-  const key = JSON.stringify([locked, list.map(t => [t.id, t.votes])]);
+  const key = JSON.stringify([locked, np && np.id, list.map(t => [t.id, t.votes])]);
   if (key === topTracksKey) return;
   topTracksKey = key;
   box.innerHTML = list.length
     ? list.map((t, i) => {
         const votes = Number(t.votes) || 0;
-        return '<button type="button" class="track-result" data-vote="' + esc(t.id) + '"' + (locked ? ' disabled' : '') + '><strong>' + (i + 1) + '. ' + esc(t.title) + '</strong><span>' + esc(t.artist) + ' · ' + votes + (votes === 1 ? ' voto' : ' votos') + '</span></button>';
+        return '<button type="button" class="track-result" title="' + esc(t.title + ' — ' + t.artist) + '" data-vote="' + esc(t.id) + '"' + (locked ? ' disabled' : '') + '><strong>' + (i + 1) + '. ' + esc(t.title) + '</strong><span>' + esc(t.artist) + ' · ' + votes + (votes === 1 ? ' voto' : ' votos') + '</span></button>';
       }).join('')
     : '<p class="search-status">Ainda não há músicas na lista. Sugere a primeira!</p>';
   box.querySelectorAll('[data-vote]').forEach(button => {
@@ -90,6 +92,7 @@ async function draw() {
   try {
     const myMsg = auraMessageId();
     const d = await api('state' + (myMsg ? '?msg=' + myMsg : ''));
+    window.__nowPlaying = d.nowPlaying || null;
     const moment = d.event.activeMoment;
     const content = document.querySelector('#content');
     document.querySelector('#title').textContent = d.event.title;
@@ -113,7 +116,7 @@ async function draw() {
     document.querySelector('.mobile')?.classList.remove('m3-mode','m4-mode','pizza-mode');
 
     if (moment === 'm1') {
-      content.innerHTML = '<h2>Sugere uma música</h2><p id="music-vote-status" class="vote-cooldown" role="status" hidden></p><div class="track-search"><input id="q" autocomplete="off" placeholder="Pesquisa por música ou artista"><div id="suggestions" class="track-suggestions"></div><div id="results" class="track-results"></div></div><h2>Vota nas que já estão na lista</h2><div id="top-tracks" class="track-results"></div><hr><h2>Farmador de Aura</h2><p id="aura-status" class="vote-cooldown" role="status" hidden></p><input id="name" placeholder="O teu nome"><textarea id="msg" placeholder="Escreve uma mensagem"></textarea><button id="send">ENVIAR PARA APROVAÇÃO</button>';
+      content.innerHTML = '<h2>Sugere uma música</h2><p id="music-vote-status" class="vote-cooldown" role="status" hidden></p><div class="track-search"><input id="q" autocomplete="off" placeholder="Pesquisa por música ou artista"><div id="suggestions" class="track-suggestions"></div><div id="results" class="track-results"></div></div><h2>Vota nas que já estão na lista</h2><p id="guest-now" class="guest-now" hidden></p><div id="top-tracks" class="track-results"></div><hr><h2>Farmador de Aura</h2><p id="aura-status" class="vote-cooldown" role="status" hidden></p><input id="name" placeholder="O teu nome"><textarea id="msg" placeholder="Escreve uma mensagem"></textarea><button id="send">ENVIAR PARA APROVAÇÃO</button>';
       renderMusicStatus(d.voting);
       renderTopTracks(d.tracks, d.voting);
       bindTrackSearch();
@@ -180,7 +183,7 @@ function bindTrackSearch(){
    if(id!==requestId||input.value.trim()!==lastQuery)return;
    suggestions.innerHTML=(data.suggestions||[]).map(s=>'<button type="button" class="suggestion" data-query="'+esc(s)+'">'+esc(s)+'</button>').join('');
    suggestions.querySelectorAll('[data-query]').forEach(b=>b.onclick=()=>{input.value=b.dataset.query;search()});
-   results.innerHTML=(data.results||[]).length?(data.results||[]).map(t=>'<button type="button" class="track-result" data-track="'+esc(JSON.stringify(t))+'"><strong>'+esc(t.title)+'</strong><span>'+esc(t.artist)+'</span></button>').join(''):'<p class="search-status">Não encontrámos resultados. Experimenta outro termo.</p>';
+   results.innerHTML=(data.results||[]).length?(data.results||[]).map(t=>'<button type="button" class="track-result" title="'+esc(t.title+' — '+t.artist)+'" data-track="'+esc(JSON.stringify(t))+'"><strong>'+esc(t.title)+'</strong><span>'+esc(t.artist)+'</span></button>').join(''):'<p class="search-status">Não encontrámos resultados. Experimenta outro termo.</p>';
    results.querySelectorAll('[data-track]').forEach(b=>b.onclick=()=>{
     const t=JSON.parse(b.dataset.track);
     showTrackConfirm(t,async()=>{
