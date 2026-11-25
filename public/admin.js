@@ -6,7 +6,39 @@ const subEl = document.querySelector('#adm-subnav');
 let token = sessionStorage.getItem('ee-admin');
 let route = {section: 'party', sub: ''};
 let refreshTimer = null;
-let live = {moment: '', pending: 0};
+let live = {moment: '', pending: 0, since: null};
+const LONG_MINUTES = 30; // a partir daqui o contador fica vermelho (o momento pode ter ficado esquecido)
+function elapsed() {
+  if (!live.since) return null;
+  const s = Math.max(0, Math.floor((Date.now() - new Date(live.since).getTime()) / 1000));
+  const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), ss = s % 60;
+  return {s, text: (h ? h + ':' + String(m).padStart(2, '0') : m) + ':' + String(ss).padStart(2, '0'), min: Math.floor(s / 60)};
+}
+// Tempo total no ar por momento (relógio de cada cartão).
+let times = {totals: {}, active: null, since: null};
+function fmtDur(s) {
+  s = Math.max(0, Math.floor(s)); const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), ss = s % 60;
+  return h ? h + 'h ' + String(m).padStart(2, '0') + 'm' : m ? m + 'm ' + String(ss).padStart(2, '0') + 's' : ss + 's';
+}
+async function loadTimes() { try { const d = await a('moment-times'); if (!d.unavailable) times = d; else times = {totals: {}, unavailable: true}; tickTimes(); } catch {} }
+function tickTimes() {
+  document.querySelectorAll('[data-clock]').forEach(c => {
+    const m = c.dataset.clock, running = m === times.active && times.since ? (Date.now() - new Date(times.since).getTime()) / 1000 : 0;
+    const total = (times.totals?.[m] || 0) + running;
+    c.querySelector('.adm-clock-tip').textContent = times.unavailable ? 'Disponível depois da migração 0006' : (total < 1 ? 'Ainda não esteve no ar' : 'No ar no total: ' + fmtDur(total));
+    c.classList.toggle('is-used', total >= 1);
+  });
+}
+function tick() {
+  // Cronómetro dentro do selo do topo: "NO AR HÁ 12:34 · M1 · MÚSICA". Fica vermelho a partir de LONG_MINUTES.
+  const el = document.querySelector('#adm-live-text'); if (!el || !live.moment) return;
+  const e = elapsed(), m = MOMENTS.find(x => x[0] === live.moment), long = !!e && e.min >= LONG_MINUTES;
+  el.textContent = 'NO AR' + (e ? ' HÁ ' + e.text : '') + ' · ' + String(live.moment).toUpperCase() + (m ? ' · ' + m[1] : '');
+  const chip = document.querySelector('#adm-live');
+  chip?.classList.toggle('is-long', long);
+  if (chip) chip.title = long ? 'Este momento está no ar há mais de ' + LONG_MINUTES + ' minutos' : '';
+}
+setInterval(() => { tick(); tickTimes(); }, 1000);
 
 const MOMENTS = [
   ['m1', 'MÚSICA', 'Sugestões TIDAL, votos e Farmador de Aura'],
@@ -78,17 +110,17 @@ function start() {
   refreshTimer = setInterval(async () => {
     refreshLive();
     if (route.section === 'messages' && !document.querySelector('.adm-editing')) render(true);
-    if (route.section === 'party') { try { const st = await api('state'); renderPollLive(st); markMoment(st.event.activeMoment); renderStats(st); } catch {} }
+    if (route.section === 'party') { try { const st = await api('state'); renderPollLive(st); renderMusicLive(st); renderSummary(st); setCtx(st); markMoment(st.event.activeMoment); renderStats(st); loadTimes(); } catch {} }
   }, 5000);
 }
 
 async function refreshLive() {
   try {
     const [st, adm] = await Promise.all([api('state'), a('admin')]);
-    live.moment = st.event.activeMoment; live.pending = (adm.pending || []).length;
+    live.moment = st.event.activeMoment; live.pending = (adm.pending || []).length; live.since = st.event.momentSince || null;
     const m = MOMENTS.find(x => x[0] === live.moment);
     $('#adm-live').hidden = false;
-    $('#adm-live-text').textContent = 'NO AR · ' + String(live.moment).toUpperCase() + (m ? ' · ' + m[1] : '');
+    tick();
     renderNav();
     if (route.section === 'home') renderHome();
   } catch (e) { if (e.status === 401) { sessionStorage.removeItem('ee-admin'); location.reload(); } }
@@ -136,10 +168,37 @@ async function renderParty() {
   root.innerHTML = `
     <div class="adm-grid">
       <section class="adm-card adm-span">
-        <header class="adm-card-head"><h2>Momento activo</h2><small>Toca num momento para o pôr no ar em todos os ecrãs.</small></header>
-        <div class="adm-moments">${MOMENTS.map(([id, name, desc], i) => `<button class="adm-moment" data-m="${id}"><b>M${i + 1}</b><strong>${name}</strong><span>${desc}</span><em>NO AR</em></button>`).join('')}</div>
+        <header class="adm-card-head adm-head-row"><div><h2>Momento activo</h2><small>Toca num momento para o pôr no ar em todos os ecrãs. O relógio de cada cartão mostra o tempo total que esteve no ar.</small></div><button class="adm-ghost adm-reset-times" id="reset-times" title="Pôr a zero o tempo total de todos os momentos">↺ RESET TIMES</button></header>
+        <div class="adm-moments">${MOMENTS.map(([id, name, desc], i) => `<button class="adm-moment" data-m="${id}"><b>M${i + 1}</b><strong>${name}</strong><span>${desc}</span><em>NO AR</em><span class="adm-clock" data-clock="${id}" role="button" tabindex="0" aria-label="Tempo total no ar de M${i + 1}"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span class="adm-clock-tip"></span></span></button>`).join('')}</div>
       </section>
-      <section class="adm-card adm-span adm-poll">
+      <div class="adm-ctx-tabs adm-span" role="tablist">
+        <button class="adm-ctx-tab" data-ctx="music" role="tab">♪ MÚSICA</button>
+        <button class="adm-ctx-tab" data-ctx="poll" role="tab">⚔ STYLE WARS</button>
+        <button class="adm-ctx-tab" data-ctx="summary" role="tab">Σ RESUMO</button>
+        <small id="ctx-hint"></small>
+      </div>
+      <section class="adm-card adm-span adm-music" id="ctx-music" hidden>
+        <header class="adm-card-head"><h2>Música ao vivo</h2><small>Sugestões e votos do M1. Actualiza sozinho.</small></header>
+        <div class="adm-music-grid">
+          <div class="adm-music-side">
+            <div class="adm-now" id="music-now"><small>A TOCAR</small><strong>—</strong></div>
+            <div class="adm-stats adm-music-stats" id="music-stats"></div>
+            <div class="adm-row"><button class="adm-ghost" data-open="dj">DJ CONTROLLER ↗</button><button class="adm-ghost" data-open="room">PROJECTOR ↗</button></div>
+          </div>
+          <div class="adm-poll-live adm-music-live">
+            <div class="adm-live-head"><span class="adm-dot"></span><b>MAIS VOTADAS</b><small id="music-total"></small></div>
+            <div id="music-results" class="adm-results"><p class="adm-muted">A carregar…</p></div>
+          </div>
+        </div>
+      </section>
+      <section class="adm-card adm-span adm-summary" id="ctx-summary" hidden>
+        <header class="adm-card-head"><h2>Resumo</h2><small>Música (M1) e Style Wars (M2) num só olhar. Actualiza sozinho.</small></header>
+        <div class="adm-summary-grid">
+          <div class="adm-poll-live"><div class="adm-live-head"><b>♪ MÚSICA · M1</b><small id="sum-music-total"></small></div><div id="sum-music"></div></div>
+          <div class="adm-poll-live"><div class="adm-live-head"><b>⚔ STYLE WARS · M2</b><small id="sum-poll-total"></small></div><div id="sum-poll"></div></div>
+        </div>
+      </section>
+      <section class="adm-card adm-span adm-poll" id="ctx-poll" hidden>
         <header class="adm-card-head"><h2>Style Wars</h2><small>Votação do M2. Os resultados actualizam sozinhos.</small></header>
         <div class="adm-poll-grid">
           <div class="adm-poll-edit">
@@ -191,12 +250,25 @@ async function renderParty() {
     const st = await api('state');
     markMoment(st.event.activeMoment);
     if (st.poll) { $('#question').value = st.poll.question || ''; (st.poll.options || []).forEach(o => addOpt(o.label)); }
-    renderStats(st); renderPollLive(st);
+    renderStats(st); renderPollLive(st); renderMusicLive(st); renderSummary(st); setCtx(st);
   } catch {}
   if (!opts.children.length) ['HOUSE', 'AFROBEATS', 'TECHNO'].forEach(addOpt);
   $('#opt-add').onclick = () => addOpt();
+  loadTimes();
+  root.querySelectorAll('[data-clock]').forEach(c => {
+    const toggle = ev => { ev.stopPropagation(); ev.preventDefault(); const open = !c.classList.contains('open'); root.querySelectorAll('.adm-clock.open').forEach(x => x.classList.remove('open')); c.classList.toggle('open', open); };
+    c.addEventListener('click', toggle);
+    c.addEventListener('keydown', ev => { if (ev.key === 'Enter' || ev.key === ' ') toggle(ev); });
+  });
+  document.addEventListener('click', () => root.querySelectorAll('.adm-clock.open').forEach(x => x.classList.remove('open')));
+  $('#reset-times').onclick = async () => {
+    if (!confirm('Pôr a zero o tempo total de todos os momentos? O cronómetro do momento no ar também recomeça.')) return;
+    try { await a('moment-times/reset', {method: 'POST', body: '{}'}); live.since = new Date().toISOString(); tick(); await loadTimes(); toast('Tempos a zero.', 'ok'); }
+    catch (e) { toast(e.message, 'err'); }
+  };
+  root.querySelectorAll('[data-ctx]').forEach(b => b.onclick = async () => { ctxChoice = b.dataset.ctx; try { setCtx(await api('state')); } catch { setCtx(null); } });
   root.querySelectorAll('[data-m]').forEach(b => b.onclick = async () => {
-    try { await a('moment', {method: 'POST', body: JSON.stringify({moment: b.dataset.m})}); markMoment(b.dataset.m); live.moment = b.dataset.m; refreshLive(); toast('No ar: ' + b.dataset.m.toUpperCase(), 'ok'); }
+    try { await a('moment', {method: 'POST', body: JSON.stringify({moment: b.dataset.m})}); markMoment(b.dataset.m); live.since = new Date().toISOString(); live.moment = b.dataset.m; tick(); loadTimes(); ctxChoice = null; try { setCtx(await api('state')); } catch {} live.moment = b.dataset.m; refreshLive(); toast('No ar: ' + b.dataset.m.toUpperCase(), 'ok'); }
     catch (e) { toast(e.message, 'err'); }
   });
   $('#save').onclick = async () => {
@@ -210,6 +282,49 @@ async function renderParty() {
       renderPollLive(await api('state'));
     } catch (e) { toast(e.message, 'err'); }
   };
+}
+// Separador do cartão de contexto: segue o momento no ar (M1 = música, resto = Style Wars) até o admin escolher.
+let ctxChoice = null;
+function setCtx(st) {
+  const am = st && st.event.activeMoment;
+  const auto = am === 'm1' ? 'music' : am === 'm2' ? 'poll' : 'summary';
+  const kind = ctxChoice || auto;
+  const m = $('#ctx-music'), p = $('#ctx-poll'), s = $('#ctx-summary'); if (!m || !p || !s) return;
+  m.hidden = kind !== 'music'; p.hidden = kind !== 'poll'; s.hidden = kind !== 'summary';
+  root.querySelectorAll('[data-ctx]').forEach(b => b.classList.toggle('active', b.dataset.ctx === kind));
+  const hint = $('#ctx-hint');
+  if (hint) hint.innerHTML = ctxChoice ? 'escolhido por ti · <button class="adm-link" id="ctx-auto">seguir o momento no ar</button>' : 'segue o momento no ar';
+  const back = $('#ctx-auto'); if (back) back.onclick = () => { ctxChoice = null; setCtx(st); };
+}
+function renderMusicLive(st) {
+  const box = $('#music-results'); if (!box) return;
+  const tracks = st.tracks || [], top = tracks.slice(0, 10), n = st.nowPlaying;
+  const total = tracks.reduce((s, t) => s + (Number(t.votes) || 0), 0);
+  const max = Math.max(1, ...top.map(t => Number(t.votes) || 0));
+  $('#music-now strong').textContent = n ? n.title + ' — ' + n.artist : 'Nada marcado pelo DJ';
+  $('#music-total').textContent = total + (total === 1 ? ' voto' : ' votos') + (st.event.activeMoment === 'm1' ? ' · M1 NO AR' : ' · M1 fora do ar');
+  $('#music-stats').innerHTML = [['MÚSICAS NA LISTA', tracks.length], ['VOTOS', total], ['LÍDER', top[0] ? top[0].title : '—', 'wide']]
+    .map(([k, v, c]) => `<div class="adm-stat ${c || ''}"><small>${k}</small><strong>${esc(String(v))}</strong></div>`).join('');
+  box.innerHTML = top.length ? top.map((t, i) => {
+    const v = Number(t.votes) || 0, pct = total ? Math.round(v / total * 100) : 0;
+    return `<div class="adm-result${i === 0 && v > 0 ? ' lead' : ''}"><div class="adm-result-line"><span title="${esc(t.title + ' — ' + t.artist)}"><b>${i + 1}</b>${esc(t.title)} <em class="adm-artist">${esc(t.artist)}</em></span><strong>${pct}%</strong><small>${v} ${v === 1 ? 'voto' : 'votos'}</small></div><div class="adm-bar"><i style="width:${Math.round(v / max * 100)}%"></i></div></div>`;
+  }).join('') + (tracks.length > 10 ? `<p class="adm-muted adm-small">+ ${tracks.length - 10} músicas na lista</p>` : '')
+    : '<p class="adm-empty">Ainda não há sugestões do público.</p>';
+}
+function miniBars(items, total) {
+  const max = Math.max(1, ...items.map(i => i.v));
+  return items.map((i, n) => `<div class="adm-result${n === 0 && i.v > 0 ? ' lead' : ''}"><div class="adm-result-line"><span title="${esc(i.label)}"><b>${n + 1}</b>${esc(i.label)}</span><strong>${total ? Math.round(i.v / total * 100) : 0}%</strong><small>${i.v}</small></div><div class="adm-bar"><i style="width:${Math.round(i.v / max * 100)}%"></i></div></div>`).join('');
+}
+function renderSummary(st) {
+  const box = $('#sum-music'); if (!box) return;
+  const tracks = st.tracks || [], mt = tracks.reduce((s, x) => s + (Number(x.votes) || 0), 0), n = st.nowPlaying;
+  $('#sum-music-total').textContent = mt + (mt === 1 ? ' voto' : ' votos') + ' · ' + tracks.length + ' músicas';
+  box.innerHTML = `<p class="adm-sum-line"><small>A TOCAR</small><strong>${n ? esc(n.title) : '—'}</strong></p>`
+    + (tracks.length ? miniBars(tracks.slice(0, 3).map(x => ({label: x.title + ' — ' + x.artist, v: Number(x.votes) || 0})), mt) : '<p class="adm-empty">Sem sugestões.</p>');
+  const poll = st.poll, opts = poll ? poll.options || [] : [], pt = opts.reduce((s, o) => s + (Number(o.votes) || 0), 0);
+  $('#sum-poll-total').textContent = pt + (pt === 1 ? ' voto' : ' votos');
+  const sorted = [...opts].map(o => ({label: o.label, v: Number(o.votes) || 0})).sort((x, y) => y.v - x.v);
+  $('#sum-poll').innerHTML = poll ? `<p class="adm-sum-line"><small>PERGUNTA</small><strong>${esc(poll.question)}</strong></p>` + miniBars(sorted, pt) : '<p class="adm-empty">Sem votação configurada.</p>';
 }
 function renderPollLive(st) {
   const box = $('#poll-results'); if (!box) return;

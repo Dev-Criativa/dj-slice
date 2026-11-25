@@ -578,3 +578,8 @@ button.active{outline-color:var(--acid)}
  .room-screen.moment-qr h1#headline{width:auto!important;max-width:46vw!important;margin-left:0!important;margin-right:auto!important;align-self:flex-start;text-align:left!important;font-size:min(10vw,20vh)!important}
  .room-screen.moment-qr #body{max-width:44vw!important;margin-left:0!important;align-self:flex-start;text-align:left!important}
 }
+
+/* M2: opções da votação podem ocupar mais de uma linha (projector e telemóvel) */
+.room-poll-meta{align-items:flex-start}
+.room-poll-meta strong{white-space:normal!important;overflow:visible!important;text-overflow:clip!important;overflow-wrap:anywhere;line-height:1.1}
+.mobile .option{white-space:normal;overflow-wrap:anywhere;line-height:1.25;height:auto}
