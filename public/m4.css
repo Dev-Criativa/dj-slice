@@ -13,3 +13,63 @@
 @media(max-height:720px){.mobile #content.m4-content .m4-headline{font-size:clamp(64px,17vw,88px)!important;margin-bottom:10px!important}.mobile #content.m4-content .m4-visual{height:clamp(150px,38vh,230px)}.mobile #content.m4-content .m4-instruction{margin:10px 0}}
 .mobile.m4-mode>#title,.mobile.m4-mode>#intro{display:none!important}
 .mobile.m4-mode header{margin-bottom:clamp(16px,4vh,28px)}
+
+/* M4 mobile full-screen composition — no scroll, image merges into the stage background */
+html:has(.mobile.m4-mode),html:has(.mobile.m4-mode) body{
+ width:100%;height:100%;min-height:0;overflow:hidden;overscroll-behavior:none;
+}
+body:has(.mobile.m4-mode){position:fixed;inset:0;min-height:0;width:100%;height:100%;overflow:hidden}
+.mobile.m4-mode{
+ width:100%;max-width:none;height:100vh;height:100svh;min-height:0;
+ padding:env(safe-area-inset-top) 4vw env(safe-area-inset-bottom);
+ margin:0;overflow:hidden;display:flex;flex-direction:column;
+}
+.mobile.m4-mode header{
+ flex:none;height:clamp(48px,7.5svh,68px);min-height:0;
+ margin:0 0 clamp(8px,1.8svh,18px);padding:0 0 8px;
+}
+.mobile.m4-mode header b{font-size:clamp(20px,5.2vw,27px)}
+.mobile.m4-mode #content.m4-content{
+ flex:1 1 auto;min-height:0;height:100%;overflow:hidden;
+ display:grid;grid-template-rows:auto auto minmax(0,1fr) auto auto;
+ align-items:stretch;justify-content:stretch;gap:0;
+}
+.mobile.m4-mode #content.m4-content .m4-kicker{
+ font-size:clamp(15px,4.4vw,20px);line-height:1.1;
+ margin:0 0 5px;letter-spacing:.24em;
+}
+.mobile.m4-mode #content.m4-content .m4-headline{
+ font-size:clamp(92px,25vw,150px)!important;line-height:.76!important;
+ margin:0 0 clamp(5px,1.3svh,12px)!important;
+ letter-spacing:-.105em!important;white-space:nowrap;
+}
+.mobile.m4-mode #content.m4-content .m4-visual{
+ min-height:0;height:100%;width:100%;overflow:hidden;
+ border:0!important;outline:0!important;box-shadow:none!important;
+ background:transparent!important;
+}
+.mobile.m4-mode #content.m4-content .m4-visual img{
+ width:100%;height:100%;object-fit:contain;object-position:center;
+ mix-blend-mode:screen;filter:contrast(1.04);
+}
+.mobile.m4-mode #content.m4-content .m4-instruction{
+ font-size:clamp(13px,3.8vw,17px);line-height:1.35;
+ margin:clamp(5px,1.2svh,11px) 0 clamp(8px,1.6svh,15px);
+ letter-spacing:.12em;
+}
+.mobile.m4-mode #content.m4-content .m4-torch-button{
+ min-height:clamp(58px,8.5svh,76px);width:100%;margin:0;padding:10px 12px;
+ font-size:clamp(13px,3.7vw,16px);letter-spacing:.075em;
+}
+.mobile.m4-mode #content.m4-content .m4-torch-icon{font-size:26px}
+.mobile.m4-mode #content.m4-content .m4-status{
+ min-height:0;margin:clamp(6px,1.1svh,10px) 0 0;
+ font-size:clamp(10px,2.8vw,12px);line-height:1.25;
+}
+@media(max-height:760px){
+ .mobile.m4-mode header{height:46px;margin-bottom:6px}
+ .mobile.m4-mode #content.m4-content .m4-headline{font-size:clamp(76px,21vw,112px)!important;margin-bottom:3px!important}
+ .mobile.m4-mode #content.m4-content .m4-instruction{margin:5px 0 7px;font-size:12px}
+ .mobile.m4-mode #content.m4-content .m4-torch-button{min-height:52px}
+ .mobile.m4-mode #content.m4-content .m4-status{margin-top:5px;font-size:9px}
+}
