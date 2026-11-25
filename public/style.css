@@ -497,3 +497,55 @@ button.active{outline-color:var(--acid)}
 .window-item.is-soon{opacity:.55}
 /* Guest em pré-visualização (aberto pelo admin) */
 .preview-banner{position:sticky;top:0;z-index:20000;padding:8px 12px;text-align:center;background:#f0c36e;color:#171513;font:700 11px 'DM Mono';letter-spacing:.14em}
+
+/* Ecrã do DJ */
+.dj-screen{max-width:900px;margin:auto;padding:max(16px,env(safe-area-inset-top)) 16px 32px}
+.dj-screen header{margin-bottom:16px}
+.dj-error{color:var(--red);font:12px 'DM Mono';min-height:1em}
+.dj-now{border:1px solid #f0c36e;background:rgba(240,201,120,.08);padding:14px 16px;margin-bottom:22px}
+.dj-now>small{color:#f0c36e;letter-spacing:.2em}
+.dj-now-track{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:8px}
+.dj-now-track strong{font-size:clamp(20px,4vw,30px)}
+.dj-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.dj-head small{color:var(--muted)}
+.dj-list{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.dj-item{display:grid;grid-template-columns:2.2em minmax(0,1fr) auto auto;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--line);background:var(--panel)}
+.dj-rank{font:18px 'DM Mono';color:#f0c36e}
+.dj-info{min-width:0;display:flex;flex-direction:column;gap:2px}
+.dj-info strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dj-info em{font-style:normal;color:var(--muted);font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dj-votes{font:12px 'DM Mono';color:var(--muted);white-space:nowrap}
+.dj-actions{display:flex;gap:6px}
+.dj-actions button,.dj-now button{margin:0;min-height:44px;white-space:nowrap}
+.dj-item.is-played{opacity:.65}
+.dj-empty{color:var(--muted);padding:8px 0}
+.dj-played{margin:24px 0}
+.dj-played summary{cursor:pointer;font:700 18px 'Space Grotesk';margin-bottom:10px}
+@media(max-width:620px){
+ .dj-item{grid-template-columns:2em minmax(0,1fr) auto;row-gap:8px}
+ .dj-actions{grid-column:1/-1}
+ .dj-actions button{flex:1}
+ .dj-now-track{flex-direction:column;align-items:stretch}
+}
+/* "A tocar" no projector e no telemóvel */
+.room-now{display:flex;align-items:baseline;gap:.8em;padding:1vh 1vw;border:1px solid #f0c36e;background:rgba(240,201,120,.1);font-size:clamp(14px,1.6vw,26px);min-width:0}
+.room-now>small{color:#f0c36e;letter-spacing:.2em;flex:none;font-size:.6em}
+.room-now strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.room-now em{font-style:normal;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.guest-now{margin:0 0 10px;padding:8px 10px;border:1px solid #f0c36e;color:#f0c36e;font:12px 'DM Mono';letter-spacing:.06em}
+/* DJ: títulos no mesmo estilo do M1 */
+.dj-screen h2,.dj-played summary{text-transform:uppercase;font-weight:700;font-size:clamp(21px,3.4vw,29px);line-height:1.05;letter-spacing:-.045em}
+.dj-now-track strong{text-transform:uppercase;letter-spacing:-.03em}
+
+/* Telemóvel: nome da música numa só linha, com "…" quando não cabe (o nome completo fica no title) */
+.track-result{min-width:0;max-width:100%}
+.track-result strong,.track-result span{display:block;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* DJ: lista mais legível ao primeiro olhar (texto mais carregado e maior) */
+.dj-item{padding:12px 14px}
+.dj-rank{font:700 22px 'DM Mono'}
+.dj-info strong{font:700 clamp(18px,2.4vw,22px)/1.15 'Space Grotesk';letter-spacing:-.02em}
+.dj-info em{font:600 15px 'Space Grotesk';color:#cfc6b8}
+.dj-votes{font:700 14px 'DM Mono';color:#f0c36e}
+.dj-now-track strong{font-weight:700}
+.dj-now-track em{font:600 17px 'Space Grotesk';color:#e7dfd2;font-style:normal}

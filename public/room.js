@@ -56,6 +56,8 @@ async function draw(){
     el('moment').textContent=moment.toUpperCase();
     el('dashboard').hidden=moment!=='m1'&&moment!=='m2';
 
+    const np=el('now-playing');
+    if(np){const n=data.nowPlaying;np.hidden=!(moment==='m1'&&n);if(n)np.innerHTML=`<small>A TOCAR</small><strong>${esc(n.title)}</strong><em>${esc(n.artist)}</em>`;}
     if(moment==='m1'){
       el('headline').innerHTML='O que toca<br><em>a seguir?</em>';
       el('body').textContent='Sugere uma música. Vota. Faz parte da festa.';

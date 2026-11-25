@@ -90,6 +90,21 @@ async function claimCooldown(env,eventId,key,scope){
  if(claimed)return {ok:true};
  return {ok:false,retryAfterSeconds:await cooldownRemaining(env,eventId,key,scope)};
 }
+const TRACK_VOTES="(COALESCE((SELECT baseline_votes FROM track_vote_baselines b WHERE b.track_id=t.id),0)+COALESCE((SELECT COUNT(*) FROM track_votes v WHERE v.track_id=t.id),0)+COALESCE((SELECT COUNT(*) FROM track_vote_events v WHERE v.track_id=t.id),0))";
+// Lista de músicas por tocar (ranking). Tolerante a uma base de dados sem a migração 0004.
+async function queuedTracks(env,eventId,limit){
+ try{return await env.DB.prepare("SELECT t.id,t.tidal_id,t.title,t.artist,t.album,t.artwork_url,"+TRACK_VOTES+" AS votes FROM tracks t WHERE t.event_id=? AND t.play_status='queued' ORDER BY votes DESC,t.id ASC LIMIT ?").bind(eventId,limit).all()}
+ catch{return await env.DB.prepare("SELECT t.id,t.tidal_id,t.title,t.artist,t.album,t.artwork_url,"+TRACK_VOTES+" AS votes FROM tracks t WHERE t.event_id=? ORDER BY votes DESC,t.id ASC LIMIT ?").bind(eventId,limit).all()}
+}
+async function nowPlaying(env,eventId){try{return await env.DB.prepare("SELECT t.id,t.title,t.artist,"+TRACK_VOTES+" AS votes FROM tracks t WHERE t.event_id=? AND t.play_status='playing' LIMIT 1").bind(eventId).first()}catch{return null}}
+// Música que já tocou ou está a tocar não volta a receber sugestões/votos (sem gastar o cooldown).
+async function playedError(env,where,...args){
+ let r=null;try{r=await env.DB.prepare("SELECT play_status FROM tracks WHERE "+where).bind(...args).first()}catch{}
+ if(r?.play_status==="played")return J({error:"ESSA JÁ TOCOU! ESCOLHE OUTRA.",code:"ALREADY_PLAYED"},409);
+ if(r?.play_status==="playing")return J({error:"ESSA ESTÁ A TOCAR AGORA! ESCOLHE OUTRA.",code:"NOW_PLAYING"},409);
+ return null;
+}
+async function isDj(req,env){const t=req.headers.get("authorization")?.replace("Bearer ","");return !!t&&((!!env.DJ_TOKEN&&t===env.DJ_TOKEN)||(!!env.ADMIN_TOKEN&&t===env.ADMIN_TOKEN))}
 const BAN_TEXT="FARMASTE TUDO MENOS AURA! FOSTE BANID@!";
 // Tolerante a uma base de dados sem a migração 0003 (trata como não banido).
 async function isBanned(env,eventId,key){if(!key)return false;try{return !!(await env.DB.prepare("SELECT 1 AS b FROM bans WHERE event_id=? AND voter_key=?").bind(eventId,key).first())}catch{return false}}
@@ -104,7 +119,7 @@ function cooldownError(seconds){
 async function state(env,e,key,msgId=0){
  const [msgs,tracks,poll,opts]=await Promise.all([
  env.DB.prepare("SELECT id,guest_name,body FROM messages WHERE event_id=? AND status='published' ORDER BY id DESC LIMIT 25").bind(e.id).all(),
- env.DB.prepare("SELECT t.id,t.tidal_id,t.title,t.artist,t.album,t.artwork_url,(COALESCE((SELECT baseline_votes FROM track_vote_baselines b WHERE b.track_id=t.id),0)+COALESCE((SELECT COUNT(*) FROM track_votes v WHERE v.track_id=t.id),0)+COALESCE((SELECT COUNT(*) FROM track_vote_events v WHERE v.track_id=t.id),0)) AS votes FROM tracks t WHERE t.event_id=? ORDER BY votes DESC,t.id ASC LIMIT 25").bind(e.id).all(),
+ queuedTracks(env,e.id,25),
  env.DB.prepare("SELECT * FROM polls WHERE event_id=? AND active=1 ORDER BY id DESC LIMIT 1").bind(e.id).first(),
  env.DB.prepare("SELECT o.id,o.label,(SELECT COUNT(*) FROM poll_votes v WHERE v.option_id=o.id) votes FROM poll_options o JOIN polls p ON p.id=o.poll_id WHERE p.event_id=? AND p.active=1 ORDER BY o.sort_order").bind(e.id).all()
  ]);
@@ -114,15 +129,20 @@ async function state(env,e,key,msgId=0){
   poll?env.DB.prepare("SELECT option_id FROM poll_votes WHERE poll_id=? AND voter_key=?").bind(poll.id,key).first():Promise.resolve(null)
  ]);
  const banned=await isBanned(env,e.id,key);
+ const playing=await nowPlaying(env,e.id);
  const mine=msgId>0?await env.DB.prepare("SELECT id,status FROM messages WHERE id=? AND event_id=?").bind(msgId,e.id).first():null;
- return {event:{code:e.code,title:env.EVENT_TITLE||e.title,activeMoment:e.active_moment},messages:msgs.results,tracks:tracks.results,poll:poll?{...poll,options:opts.results}:null,voting:{styleWarsRetryAfterSeconds:styleCooldown,musicRetryAfterSeconds:musicCooldown,myStyleWarsOptionId:myVote?.option_id??null},banned,myMessage:msgId>0?(mine?{id:mine.id,status:mine.status}:{id:msgId,status:'deleted'}):null};
+ return {event:{code:e.code,title:env.EVENT_TITLE||e.title,activeMoment:e.active_moment},messages:msgs.results,tracks:tracks.results,poll:poll?{...poll,options:opts.results}:null,voting:{styleWarsRetryAfterSeconds:styleCooldown,musicRetryAfterSeconds:musicCooldown,myStyleWarsOptionId:myVote?.option_id??null},nowPlaying:playing,banned,myMessage:msgId>0?(mine?{id:mine.id,status:mine.status}:{id:msgId,status:'deleted'}):null};
 }
 export default {async fetch(req,env,ctx){
  const u=new URL(req.url);
  let p=u.pathname;
- const aliases={"/qr":"/qr.html","/guest":"/guest.html","/admin":"/admin.html","/room":"/room.html"};
+ const aliases={"/qr":"/qr.html","/guest":"/guest.html","/admin":"/admin.html","/room":"/room.html","/dj":"/dj.html"};
  if(aliases[p]){u.pathname=aliases[p];return env.ASSETS.fetch(new Request(u,req));}
  if(!p.startsWith("/api/"))return env.ASSETS.fetch(req);
+ if(p==="/api/dj-login"&&req.method==="POST"){const b=await req.json().catch(()=>({}));const pin=String(b.pin??"");
+  if(env.DJ_PIN&&env.DJ_TOKEN&&pin===env.DJ_PIN)return J({token:env.DJ_TOKEN,role:"dj"});
+  if(env.ADMIN_PIN&&env.ADMIN_TOKEN&&pin===env.ADMIN_PIN)return J({token:env.ADMIN_TOKEN,role:"admin"});
+  return J({error:"PIN incorrecto"},401)}
  if(p==="/api/login"&&req.method==="POST"){const b=await req.json();return String(b.pin)===env.ADMIN_PIN&&!!env.ADMIN_TOKEN?J({token:env.ADMIN_TOKEN}):J({error:"PIN incorrecto ou autenticação não configurada"},401)}
  const m=p.match(/^\/api\/([A-Z0-9_-]+)\/(.*)$/i);if(!m)return J({error:"Endpoint inválido"},404);
  const e=await event(env,m[1]);if(!e)return J({error:"Evento não encontrado"},404);
@@ -159,9 +179,10 @@ export default {async fetch(req,env,ctx){
   if(e.active_moment!=="m1")return J({error:"Sugestões fechadas"},409);
   if(!key)return J({error:"Voter key em falta"},400);
   if(b.source!=="tidal"||!b.tidalId)return J({error:"A faixa tem de vir da pesquisa TIDAL"},400);
+  const tidalId=clean(b.tidalId,100);
+  const played=await playedError(env,"event_id=? AND tidal_id=?",e.id,tidalId);if(played)return played;
   const claim=await claimCooldown(env,e.id,key,"music");
   if(!claim.ok)return cooldownError(claim.retryAfterSeconds);
-  const tidalId=clean(b.tidalId,100);
   await env.DB.prepare("INSERT OR IGNORE INTO tracks(event_id,tidal_id,title,artist,album,artwork_url) VALUES(?,?,?,?,?,?)").bind(e.id,tidalId,clean(b.title,180),clean(b.artist,180),clean(b.album,180),clean(b.artworkUrl,500)).run();
   const track=await env.DB.prepare("SELECT id FROM tracks WHERE event_id=? AND tidal_id=?").bind(e.id,tidalId).first();
   if(!track)return J({error:"Não foi possível registar a música."},500);
@@ -174,10 +195,33 @@ export default {async fetch(req,env,ctx){
   const id=Number(a.split("/")[1]);
   const track=await env.DB.prepare("SELECT id FROM tracks WHERE id=? AND event_id=?").bind(id,e.id).first();
   if(!track)return J({error:"Música não encontrada."},404);
+  const played=await playedError(env,"id=? AND event_id=?",id,e.id);if(played)return played;
   const claim=await claimCooldown(env,e.id,key,"music");
   if(!claim.ok)return cooldownError(claim.retryAfterSeconds);
   await env.DB.prepare("INSERT INTO track_vote_events(event_id,track_id,voter_key) VALUES(?,?,?)").bind(e.id,id,key).run();
   return J({ok:true,voteAdded:true});
+ }
+ if(a==="dj"&&req.method==="GET"){
+  if(!await isDj(req,env))return J({error:"Acesso DJ necessário"},401);
+  const queue=(await queuedTracks(env,e.id,15)).results;
+  let played=[];try{played=(await env.DB.prepare("SELECT t.id,t.title,t.artist,t.played_at,"+TRACK_VOTES+" AS votes FROM tracks t WHERE t.event_id=? AND t.play_status='played' ORDER BY t.played_at DESC,t.id DESC LIMIT 50").bind(e.id).all()).results}catch{}
+  return J({event:{code:e.code,title:env.EVENT_TITLE||e.title,activeMoment:e.active_moment},nowPlaying:await nowPlaying(env,e.id),queue,played});
+ }
+ if(a.startsWith("dj/track/")&&req.method==="POST"){
+  if(!await isDj(req,env))return J({error:"Acesso DJ necessário"},401);
+  const id=Number(a.split("/")[2]),b=await req.json().catch(()=>({}));
+  if(!Number.isInteger(id)||id<1)return J({error:"Música inválida"},400);
+  if(!["playing","played","queued"].includes(b.status))return J({error:"Estado inválido"},400);
+  const track=await env.DB.prepare("SELECT id FROM tracks WHERE id=? AND event_id=?").bind(id,e.id).first();
+  if(!track)return J({error:"Música não encontrada"},404);
+  try{
+   if(b.status==="playing")await env.DB.batch([
+    env.DB.prepare("UPDATE tracks SET play_status='played',played_at=CURRENT_TIMESTAMP WHERE event_id=? AND play_status='playing' AND id<>?").bind(e.id,id),
+    env.DB.prepare("UPDATE tracks SET play_status='playing',played_at=NULL WHERE id=? AND event_id=?").bind(id,e.id)]);
+   else if(b.status==="played")await env.DB.prepare("UPDATE tracks SET play_status='played',played_at=CURRENT_TIMESTAMP WHERE id=? AND event_id=?").bind(id,e.id).run();
+   else await env.DB.prepare("UPDATE tracks SET play_status='queued',played_at=NULL WHERE id=? AND event_id=?").bind(id,e.id).run();
+  }catch{return J({error:"Ecrã do DJ indisponível: falta aplicar a migração 0004."},409)}
+  return J({ok:true});
  }
  if(!await admin(req,env))return J({error:"Acesso admin necessário"},401);
  if(a==="admin"&&req.method==="GET"){

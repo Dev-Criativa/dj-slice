@@ -70,16 +70,17 @@ function showTab(tab) {
           <div><strong>ECRÃ QR</strong><p>QR de entrada na festa, para um ecrã à porta.</p></div>
           <button class="secondary" data-open="qr">ABRIR ↗</button>
         </article>
-        <article class="item window-item is-soon">
-          <div><strong>DJ</strong><p>Ecrã do DJ. Em breve.</p></div>
-          <button class="secondary" disabled>EM BREVE</button>
+        <article class="item window-item">
+          <div><strong>DJ</strong><p>Top 15 mais votadas: o DJ marca "A tocar" (aparece no projector) e tira as que já tocaram. Entra com o PIN do DJ.</p></div>
+          <button data-open="dj">ABRIR ↗</button>
         </article>
       </div>`;
     const ev = encodeURIComponent(CODE);
     const targets = {
       room: ['/room?event=' + ev, 'dj-slice-room', ''],
       guest: ['/guest?event=' + ev + '&preview=1', 'dj-slice-guest-preview', 'popup,width=400,height=860'],
-      qr: ['/qr?event=' + ev, 'dj-slice-qr', '']
+      qr: ['/qr?event=' + ev, 'dj-slice-qr', ''],
+      dj: ['/dj?event=' + ev, 'dj-slice-dj', '']
     };
     view.querySelectorAll('[data-open]').forEach(button => button.onclick = () => {
       const [url, name, features] = targets[button.dataset.open];
