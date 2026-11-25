@@ -461,3 +461,21 @@ button.active{outline-color:var(--acid)}
 .mobile .device-call h2{margin:0 0 24px!important;font-size:clamp(48px,13vw,78px)!important;line-height:.82!important;letter-spacing:-.09em!important;font-weight:700!important;text-transform:uppercase}
 .mobile .device-call h2 em{font-style:normal;color:var(--red)}
 .mobile .device-call p{margin:0;color:var(--acid);font:700 clamp(15px,4vw,21px)/1.15 'DM Mono';letter-spacing:.015em;text-transform:uppercase}
+
+
+/* Voting cooldown feedback */
+.mobile .vote-cooldown{
+ margin:10px 0 14px;padding:12px 14px;
+ border:1px solid rgba(240,201,120,.5);
+ background:rgba(240,201,120,.08);
+ color:var(--acid);
+ font:600 12px/1.45 'DM Mono';
+ letter-spacing:.025em;
+ text-transform:uppercase;
+}
+.mobile .option.selected{
+ border-color:var(--acid);
+ background:rgba(240,201,120,.14);
+ color:var(--acid);
+}
+.mobile .option:disabled{opacity:.58;cursor:not-allowed}

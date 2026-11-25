@@ -1,21 +1,41 @@
 let renderedMoment = null;
 
-function renderPoll(poll) {
+function voteMessage(seconds) {
+  if (!(Number(seconds) > 0)) return '';
+  const mins = Math.max(1, Math.ceil(Number(seconds) / 60));
+  return 'O TEU VOTO JÁ FOI REGISTADO. VOLTA A TENTAR EM ' + mins + ' MIN.';
+}
+function renderMusicStatus(voting) {
+  const status = document.querySelector('#music-vote-status');
+  if (!status) return;
+  status.textContent = voteMessage(voting?.musicRetryAfterSeconds);
+  status.hidden = !status.textContent;
+}
+function renderPoll(poll, voting) {
   const question = document.querySelector('#poll-question');
   const options = document.querySelector('#poll-options');
   if (!question || !options) return;
   question.textContent = poll?.question || 'A votação ainda não está disponível.';
   const items = [...(poll?.options || [])].sort((a, b) => (Number(b.votes) || 0) - (Number(a.votes) || 0));
-  options.innerHTML = items.length
-    ? items.map(option => `<button class="option" data-id="${esc(option.id)}">${esc(option.label)}</button>`).join('')
-    : '<p class="poll-empty">A votação ainda não tem opções. Aguarda que o DJ a configure.</p>';
+  const remaining = Number(voting?.styleWarsRetryAfterSeconds) || 0;
+  const myOption = voting?.myStyleWarsOptionId == null ? null : String(voting.myStyleWarsOptionId);
+  const notice = voteMessage(remaining);
+  options.innerHTML = (notice ? '<p class="vote-cooldown" role="status">' + esc(notice) + '</p>' : '') + (items.length
+    ? items.map(option => {
+        const selected = myOption === String(option.id);
+        return '<button class="option' + (selected ? ' selected' : '') + '" data-id="' + esc(option.id) + '"' + (remaining > 0 ? ' disabled' : '') + '>' + esc(option.label) + (selected ? ' ✓' : '') + '</button>';
+      }).join('')
+    : '<p class="poll-empty">A votação ainda não tem opções. Aguarda que o DJ a configure.</p>');
   options.querySelectorAll('[data-id]').forEach(button => {
     button.onclick = async () => {
+      button.disabled = true;
       try {
         await api('poll/vote', {method:'POST',body:JSON.stringify({optionId:button.dataset.id})});
-        button.textContent += ' ✓';
-        button.disabled = true;
-      } catch (error) { alert(error.message); }
+        await draw();
+      } catch (error) {
+        alert(error.message);
+        await draw();
+      }
     };
   });
 }
@@ -32,18 +52,20 @@ async function draw() {
 
     // Mantém a interface e os campos intactos; actualiza os dados dinâmicos da poll.
     if (moment === renderedMoment) {
-      if (moment === 'm2') renderPoll(d.poll);
+      if (moment === 'm2') renderPoll(d.poll, d.voting);
+      if (moment === 'm1') renderMusicStatus(d.voting);
       return;
     }
     renderedMoment = moment;
 
     if (moment === 'm1') {
-      content.innerHTML = '<h2>Sugere uma música</h2><div class="track-search"><input id="q" autocomplete="off" placeholder="Pesquisa por música ou artista"><div id="suggestions" class="track-suggestions"></div><div id="results" class="track-results"></div></div><hr><h2>Mural de mensagens</h2><input id="name" placeholder="O teu nome"><textarea id="msg" placeholder="Escreve uma mensagem"></textarea><button id="send">ENVIAR PARA APROVAÇÃO</button>';
+      content.innerHTML = '<h2>Sugere uma música</h2><p id="music-vote-status" class="vote-cooldown" role="status" hidden></p><div class="track-search"><input id="q" autocomplete="off" placeholder="Pesquisa por música ou artista"><div id="suggestions" class="track-suggestions"></div><div id="results" class="track-results"></div></div><hr><h2>Mural de mensagens</h2><input id="name" placeholder="O teu nome"><textarea id="msg" placeholder="Escreve uma mensagem"></textarea><button id="send">ENVIAR PARA APROVAÇÃO</button>';
+      renderMusicStatus(d.voting);
       bindTrackSearch();
       bindMessage();
     } else if (moment === 'm2') {
       content.innerHTML = '<h2 id="poll-question">A carregar votação…</h2><div id="poll-options"></div><hr><h2>Mural de mensagens</h2><input id="name" placeholder="O teu nome"><textarea id="msg" placeholder="Escreve uma mensagem"></textarea><button id="send">ENVIAR PARA APROVAÇÃO</button>';
-      renderPoll(d.poll);
+      renderPoll(d.poll, d.voting);
       bindMessage();
     } else if (moment === 'm3') {
       content.innerHTML = '<div class="device-call"><h2>MIDNIGHT<br><em>SLICE.</em></h2><p>A PIZZA ESTÁ SERVIDA. VAI BUSCAR A TUA FATIA.</p></div>';
@@ -84,7 +106,8 @@ function bindTrackSearch(){
     const t=JSON.parse(b.dataset.track);
     showTrackConfirm(t,async()=>{
      await api('tracks',{method:'POST',body:JSON.stringify({source:'tidal',tidalId:t.tidalId,title:t.title,artist:t.artist,album:t.album})});
-     b.disabled=true;b.classList.add('selected');b.innerHTML='<strong>'+esc(t.title)+'</strong><span>Adicionada à lista ✓</span>';
+     b.disabled=true;b.classList.add('selected');b.innerHTML='<strong>'+esc(t.title)+'</strong><span>Voto registado ✓</span>';
+     await draw();
     });
    });
   }catch(error){if(id===requestId)results.innerHTML='<p class="search-status">'+esc(error.message)+'</p>'}
