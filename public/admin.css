@@ -169,3 +169,19 @@ body:has(.adm){background:var(--adm-ink)}
 .adm-card select{min-height:48px;padding:10px 12px;font:600 15px "Space Grotesk"}
 .adm-top{height:auto!important;min-height:64px}
 @media(max-width:720px){.adm-nav{gap:0;padding:0!important}.adm-tab{flex:1 1 0;min-width:0;padding:14px 4px 12px;font-size:10px;letter-spacing:.06em;text-align:center;white-space:normal;line-height:1.2}.adm-tab .adm-badge{margin-left:4px;min-width:18px;height:18px;font-size:10px}}
+
+/* Índice do admin (página inicial, no estilo da antiga página de preparação) */
+.adm-brand{cursor:pointer}
+.adm-home{padding:8px 0 0}
+.adm-home-kicker{margin:0 0 10px;font:500 11px 'DM Mono';letter-spacing:.24em;color:var(--adm-gold)}
+.adm-home h1{margin:0 0 28px;font-size:clamp(48px,8vw,104px);line-height:.85}
+.adm-home-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
+.adm-home-card{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:10px;min-height:170px;padding:20px;text-align:left;background:var(--adm-card);color:var(--adm-fg);border:1px solid var(--adm-line);cursor:pointer;letter-spacing:0;transition:border-color .15s,transform .15s}
+.adm-home-card:hover{border-color:var(--adm-gold);transform:translateY(-2px)}
+.adm-home-n{font:700 13px 'DM Mono';letter-spacing:.18em;color:var(--adm-gold)}
+.adm-home-card strong{margin-top:auto;font:700 clamp(22px,2.4vw,30px)/1 'Space Grotesk';letter-spacing:-.04em}
+.adm-home-desc{font:14px/1.35 'Space Grotesk';color:var(--adm-muted)}
+.adm-home-tag{position:absolute;top:16px;right:16px;padding:4px 8px;background:var(--adm-red);color:#fff;font:700 10px 'DM Mono';letter-spacing:.12em}
+.adm-home-tag.ext{background:transparent;color:var(--adm-gold);border:1px solid var(--adm-gold);font-size:13px}
+@media(max-width:720px){.adm-home-grid{grid-template-columns:1fr 1fr}.adm-home-card{min-height:140px;padding:16px}}
+@media(max-width:420px){.adm-home-grid{grid-template-columns:1fr}}
