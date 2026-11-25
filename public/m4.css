@@ -1,0 +1,13 @@
+/* M4 — Turn on the lights: existing PEDE & FATIA visual language */
+.mobile #content.m4-content{margin:0;padding:0;border:0;background:transparent;box-shadow:none;display:flex;flex-direction:column;align-items:stretch;gap:0}
+.mobile #content.m4-content .m4-kicker{margin:0 0 2px;text-align:center;color:var(--acid);font:500 clamp(12px,3.2vw,15px) 'DM Mono';letter-spacing:.22em}
+.mobile #content.m4-content .m4-headline{margin:0 0 14px!important;text-align:center;color:var(--fg);font:700 clamp(76px,22vw,112px)/.78 'Space Grotesk'!important;letter-spacing:-.105em!important;text-transform:uppercase}
+.mobile #content.m4-content .m4-headline span{color:var(--red)}
+.mobile #content.m4-content .m4-visual{width:100%;height:clamp(190px,54vw,300px);overflow:hidden;border:1px solid rgba(240,201,120,.42);background:radial-gradient(ellipse at 60% 38%,rgba(240,201,120,.12),transparent 55%),#171716;display:flex;align-items:center;justify-content:center}
+.mobile #content.m4-content .m4-visual img{width:100%;height:100%;object-fit:cover;object-position:center 48%;display:block;mix-blend-mode:screen}
+.mobile #content.m4-content .m4-instruction{margin:14px 0 16px;text-align:center;color:var(--acid);font:500 clamp(11px,3vw,14px)/1.5 'DM Mono';letter-spacing:.1em}
+.mobile #content.m4-content .m4-torch-button{width:100%;min-height:58px;margin:0;padding:13px 14px;display:flex;align-items:center;justify-content:center;gap:13px;background:var(--acid);color:#211b14;border:1px solid rgba(240,201,120,.8);font:700 12px 'DM Mono';letter-spacing:.07em}
+.mobile #content.m4-content .m4-torch-icon{font-size:23px;line-height:1;border-right:1px solid rgba(33,27,20,.35);padding-right:13px}
+.mobile #content.m4-content .m4-torch-button.is-on{background:var(--red);color:#fff;border-color:var(--red)}
+.mobile #content.m4-content .m4-status{min-height:28px;margin:10px 0 0;text-align:center;color:var(--muted);font:10px/1.5 'DM Mono';letter-spacing:.06em}
+@media(max-height:720px){.mobile #content.m4-content .m4-headline{font-size:clamp(64px,17vw,88px)!important;margin-bottom:10px!important}.mobile #content.m4-content .m4-visual{height:clamp(150px,38vh,230px)}.mobile #content.m4-content .m4-instruction{margin:10px 0}}
