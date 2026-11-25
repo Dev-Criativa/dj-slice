@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 640" role="img" aria-label="Mão a segurar uma fatia de pizza de pepperoni com queijo a escorrer">
+  <defs>
+    <linearGradient id="crust" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffd98a"/><stop offset=".6" stop-color="#e79a3e"/><stop offset="1" stop-color="#b8621f"/></linearGradient>
+    <linearGradient id="cheese" x1="0" y1="0" x2=".7" y2="1"><stop stop-color="#ffe7a3"/><stop offset=".55" stop-color="#f6b955"/><stop offset="1" stop-color="#e08a2c"/></linearGradient>
+    <linearGradient id="skin" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fbe0b0"/><stop offset="1" stop-color="#e9b877"/></linearGradient>
+    <radialGradient id="pep" cx=".4" cy=".35" r=".7"><stop stop-color="#d8433f"/><stop offset="1" stop-color="#9c2130"/></radialGradient>
+    <pattern id="dots" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(30)"><circle cx="2" cy="2" r="1.4" fill="#3a1d0c" opacity=".55"/></pattern>
+    <pattern id="dotsFine" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(30)"><circle cx="1.5" cy="1.5" r=".9" fill="#2a160b" opacity=".45"/></pattern>
+    <linearGradient id="shadeR" x1="0" y1="0" x2="1" y2="1"><stop offset=".45" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#fff"/></linearGradient>
+    <mask id="shadeMask"><rect width="600" height="640" fill="url(#shadeR)"/></mask>
+  </defs>
+
+  <!-- manga canelada -->
+  <g stroke="#17120f" stroke-width="8" stroke-linejoin="round">
+    <path fill="#3b2a1f" d="M18 640 L48 548 Q120 500 236 548 L250 640Z"/>
+  </g>
+  <g stroke="#c9955a" stroke-width="4" stroke-linecap="round" opacity=".75">
+    <path d="M62 560 L48 632 M84 548 L72 634 M106 541 L97 636 M128 538 L122 637 M150 538 L147 637 M172 541 L172 637 M194 546 L197 636 M216 552 L222 634"/>
+  </g>
+
+  <!-- mão (palma e dedos por baixo da fatia) -->
+  <g stroke="#17120f" stroke-width="8" stroke-linejoin="round" stroke-linecap="round">
+    <path fill="url(#skin)" d="M62 552 Q86 462 132 396 Q168 342 214 300 Q246 272 282 268 L336 300 Q318 334 290 360 Q262 392 252 440 Q246 488 232 552 Q150 516 62 552Z"/>
+    <path fill="url(#skin)" d="M276 300 Q330 300 392 332 Q412 344 402 360 Q392 370 366 362 Q318 348 272 340Z"/>
+    <path fill="url(#skin)" d="M268 340 Q318 352 360 380 Q376 394 364 406 Q350 412 326 400 Q290 384 258 380Z"/>
+  </g>
+  <path fill="url(#dotsFine)" d="M62 552 Q86 462 132 396 Q168 342 214 300 L230 330 Q190 380 170 440 Q150 500 150 530 Q110 526 62 552Z"/>
+
+  <!-- fatia -->
+  <g stroke="#17120f" stroke-width="9" stroke-linejoin="round" stroke-linecap="round">
+    <!-- queijo com pingos -->
+    <path fill="url(#cheese)" d="M182 214 Q330 158 472 118 Q534 268 580 470 Q588 512 560 520 Q552 600 536 602 Q520 602 522 540 Q512 518 504 506 Q500 566 486 566 Q472 566 476 500 Q466 486 456 474 Q452 528 440 528 Q426 528 430 466 Q414 446 398 428 Q396 488 382 488 Q368 488 372 410 Q344 376 318 344 Q284 296 238 266 Q206 246 182 214Z"/>
+    <!-- borda -->
+    <path fill="url(#crust)" d="M96 176 Q86 120 150 102 Q300 58 444 30 Q500 22 508 70 Q512 104 476 120 Q330 158 180 214 Q114 236 96 176Z"/>
+    <!-- pepperoni -->
+    <circle cx="392" cy="216" r="38" fill="url(#pep)"/>
+    <circle cx="474" cy="196" r="24" fill="url(#pep)"/>
+    <circle cx="446" cy="314" r="46" fill="url(#pep)"/>
+    <circle cx="528" cy="420" r="34" fill="url(#pep)"/>
+    <circle cx="352" cy="320" r="24" fill="url(#pep)"/>
+  </g>
+  <!-- textura: pontilhado na borda e na sombra do queijo -->
+  <path fill="url(#dots)" d="M96 176 Q86 120 150 102 Q300 58 444 30 Q500 22 508 70 Q512 104 476 120 Q330 158 180 214 Q114 236 96 176Z" opacity=".8"/>
+  <path fill="url(#dots)" mask="url(#shadeMask)" d="M182 214 Q330 158 472 118 Q534 268 580 470 Q588 512 560 520 L372 410 Q344 376 318 344 Q284 296 238 266 Q206 246 182 214Z"/>
+  <!-- manchas tostadas -->
+  <g fill="#8a3b14" opacity=".75">
+    <ellipse cx="210" cy="132" rx="16" ry="7" transform="rotate(-18 210 132)"/>
+    <ellipse cx="300" cy="96" rx="20" ry="8" transform="rotate(-14 300 96)"/>
+    <ellipse cx="404" cy="66" rx="14" ry="6" transform="rotate(-10 404 66)"/>
+    <circle cx="262" cy="232" r="6"/><circle cx="398" cy="248" r="5"/><circle cx="500" cy="300" r="6"/>
+    <circle cx="410" cy="392" r="5"/><circle cx="492" cy="230" r="4"/><circle cx="300" cy="276" r="4"/>
+  </g>
+  <!-- pintas no pepperoni e brilhos -->
+  <g fill="#5e0f1c" opacity=".7">
+    <circle cx="380" cy="228" r="3"/><circle cx="404" cy="204" r="3"/><circle cx="396" cy="238" r="2.5"/>
+    <circle cx="436" cy="326" r="3"/><circle cx="462" cy="300" r="3"/><circle cx="452" cy="336" r="2.5"/>
+    <circle cx="520" cy="428" r="3"/><circle cx="536" cy="412" r="2.5"/><circle cx="474" cy="204" r="2.5"/>
+  </g>
+  <g fill="none" stroke="#ffd2b0" stroke-width="5" stroke-linecap="round" opacity=".7">
+    <path d="M372 198 Q384 188 400 190"/><path d="M424 288 Q438 278 456 280"/><path d="M512 400 Q522 393 534 395"/>
+  </g>
+
+  <!-- polegar por cima da fatia, com unha vermelha -->
+  <g stroke="#17120f" stroke-width="8" stroke-linejoin="round" stroke-linecap="round">
+    <path fill="url(#skin)" d="M214 300 Q240 248 292 220 Q328 202 346 214 Q360 228 342 246 Q308 270 282 300 Q256 326 236 330Z"/>
+    <path fill="#8e1f3f" d="M308 222 Q326 206 344 212 Q354 222 342 234 Q324 244 310 238 Q300 230 308 222Z"/>
+  </g>
+  <path d="M316 220 Q326 214 336 216" fill="none" stroke="#e98aa4" stroke-width="3.5" stroke-linecap="round"/>
+  <path d="M244 300 Q258 284 274 280" fill="none" stroke="#17120f" stroke-width="3" stroke-linecap="round" opacity=".6"/>
+</svg>
