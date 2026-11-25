@@ -8,8 +8,18 @@ function voteMessage(seconds) {
 function renderMusicStatus(voting) {
   const status = document.querySelector('#music-vote-status');
   if (!status) return;
-  status.textContent = voteMessage(voting?.musicRetryAfterSeconds);
+  const wait = Number(voting?.musicRetryAfterSeconds) || 0;
+  status.textContent = wait > 0 ? 'JÁ SUGERISTE UMA MÚSICA. PODES SUGERIR OUTRA EM ' + Math.max(1, Math.ceil(wait / 60)) + ' MIN.' : '';
   status.hidden = !status.textContent;
+  const input = document.querySelector('#q');
+  if (input) {
+    const locked = wait > 0;
+    if (input.disabled !== locked) {
+      input.disabled = locked;
+      input.placeholder = locked ? 'Pesquisa disponível quando o tempo acabar' : 'Pesquisa por música ou artista';
+      document.querySelectorAll('#results button, #suggestions button').forEach(b => { if (!b.classList.contains('selected')) b.disabled = locked; });
+    }
+  }
 }
 function renderPoll(poll, voting) {
   const question = document.querySelector('#poll-question');
@@ -121,9 +131,9 @@ function bindTrackSearch(){
      await draw();
     });
    });
-  }catch(error){if(id===requestId)results.innerHTML='<p class="search-status">'+esc(error.message)+'</p>'}
+  }catch(error){if(id===requestId)results.innerHTML='<p class="search-status">'+esc(error.message)+'</p>';if(error.code==='SEARCH_COOLDOWN')draw()}
  }
- input.addEventListener('input',()=>{clearTimeout(timer);timer=setTimeout(search,320)});
+ input.addEventListener('input',()=>{clearTimeout(timer);timer=setTimeout(search,500)});
  input.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();clearTimeout(timer);search()}});
 }
 

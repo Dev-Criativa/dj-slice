@@ -13,6 +13,17 @@ database_name = "dj-slice-db"
 database_id = "2e33efb6-f8be-4e76-8e77-ecea4f5aa138"
 migrations_dir = "migrations"
 
+# Limites por dispositivo (Workers Rate Limiting). period só aceita 10 ou 60 segundos.
+[[ratelimits]]
+name = "SEARCH_LIMITER"
+namespace_id = "2026001"
+simple = { limit = 15, period = 60 }
+
+[[ratelimits]]
+name = "MESSAGE_LIMITER"
+namespace_id = "2026002"
+simple = { limit = 3, period = 60 }
+
 [vars]
 EVENT_CODE = "PARTY2026"
 EVENT_TITLE = "PEDE & FATIA"

@@ -2,38 +2,80 @@ const J=(x,s=200)=>new Response(JSON.stringify(x),{status:s,headers:{"content-ty
 const clean=(x,n=240)=>String(x??"").trim().slice(0,n);
 async function event(env,code){return env.DB.prepare("SELECT * FROM events WHERE code=?").bind(code.toUpperCase()).first()}
 async function admin(req,env){const t=req.headers.get("authorization")?.replace("Bearer ","");return !!t&&!!env.ADMIN_TOKEN&&t===env.ADMIN_TOKEN}
-let tidalTokenCache={token:null,expiresAt:0};
-async function tidalToken(env){
- if(!env.TIDAL_CLIENT_ID||!env.TIDAL_CLIENT_SECRET)throw new Error("Pesquisa TIDAL ainda não configurada no servidor.");
- if(tidalTokenCache.token&&Date.now()<tidalTokenCache.expiresAt)return tidalTokenCache.token;
- const basic=btoa(env.TIDAL_CLIENT_ID+":"+env.TIDAL_CLIENT_SECRET);
- const response=await fetch("https://auth.tidal.com/v1/oauth2/token",{method:"POST",headers:{"Authorization":"Basic "+basic,"Content-Type":"application/x-www-form-urlencoded"},body:"grant_type=client_credentials"});
- const data=await response.json();
- if(!response.ok||!data.access_token)throw new Error("Não foi possível autenticar na TIDAL.");
- tidalTokenCache={token:data.access_token,expiresAt:Date.now()+Math.max(60,(data.expires_in||3600)-120)*1000};
- return data.access_token;
+// Credenciais TIDAL: TIDAL_CLIENT_ID/SECRET e, opcionalmente, TIDAL_CLIENT_ID_2/SECRET_2, _3, ...
+// Os pedidos rodam entre as credenciais; uma credencial que receba 429 fica em pausa e passa-se à seguinte.
+const tidalState=new Map();let tidalNext=0;
+class TidalBusyError extends Error{constructor(){super("MUITA GENTE A PESQUISAR AO MESMO TEMPO. TENTA DAQUI A POUCO.");this.status=503}}
+function tidalCredentials(env){
+ const list=[];
+ if(env.TIDAL_CLIENT_ID&&env.TIDAL_CLIENT_SECRET)list.push({id:env.TIDAL_CLIENT_ID,secret:env.TIDAL_CLIENT_SECRET});
+ for(let n=2;n<=5;n++){const id=env["TIDAL_CLIENT_ID_"+n],secret=env["TIDAL_CLIENT_SECRET_"+n];if(id&&secret)list.push({id,secret});}
+ return list;
 }
+function tidalSlot(cred){let st=tidalState.get(cred.id);if(!st){st={token:null,expiresAt:0,pausedUntil:0};tidalState.set(cred.id,st)}return st}
+async function tidalToken(cred,st){
+ if(st.token&&Date.now()<st.expiresAt)return st.token;
+ const response=await fetch("https://auth.tidal.com/v1/oauth2/token",{method:"POST",headers:{"Authorization":"Basic "+btoa(cred.id+":"+cred.secret),"Content-Type":"application/x-www-form-urlencoded"},body:"grant_type=client_credentials"});
+ const data=await response.json().catch(()=>({}));
+ if(response.status===429){st.pausedUntil=Date.now()+retryMs(response);return null}
+ if(!response.ok||!data.access_token)throw new Error("Não foi possível autenticar na TIDAL.");
+ st.token=data.access_token;st.expiresAt=Date.now()+Math.max(60,(data.expires_in||3600)-120)*1000;
+ return st.token;
+}
+function retryMs(response){const s=Number(response.headers.get("retry-after"));return (s>0?Math.min(s,300):30)*1000}
+// Faz um GET à API TIDAL com a próxima credencial disponível. Devolve {response,payload}.
+async function tidalGet(env,url){
+ const creds=tidalCredentials(env);
+ if(!creds.length)throw new Error("Pesquisa TIDAL ainda não configurada no servidor.");
+ for(let tries=0;tries<creds.length;tries++){
+  const cred=creds[tidalNext++%creds.length],st=tidalSlot(cred);
+  if(Date.now()<st.pausedUntil)continue;
+  const token=await tidalToken(cred,st);if(!token)continue;
+  const response=await fetch(url,{headers:{"Authorization":"Bearer "+token,"Accept":"application/vnd.api+json"}});
+  if(response.status===429){st.pausedUntil=Date.now()+retryMs(response);continue}
+  if(response.status===401){st.token=null;st.expiresAt=0}
+  return {response,payload:await response.json().catch(()=>({}))};
+ }
+ throw new TidalBusyError();
+}
+// Cache de pesquisas: memória do isolate + Cache API da Cloudflare, 10 minutos.
+const SEARCH_TTL=600,searchMemory=new Map();
+function searchCacheKey(q){return new Request("https://tidal-search.cache/v1?q="+encodeURIComponent(q.toLowerCase().replace(/\s+/g," ").trim()))}
+async function cachedSearch(env,q,ctx){
+ const key=searchCacheKey(q),k=key.url,hit=searchMemory.get(k);
+ if(hit&&hit.expiresAt>Date.now())return hit.data;
+ const cache=globalThis.caches?.default;
+ if(cache){try{const r=await cache.match(key);if(r){const data=await r.json();remember(k,data);return data}}catch{}}
+ const results=await tidalSearch(env,q);
+ const suggestions=results.length<3?await tidalSuggestions(env,q).catch(()=>[]):[];
+ const data={results,suggestions};
+ remember(k,data);
+ if(cache){const put=cache.put(key,new Response(JSON.stringify(data),{headers:{"content-type":"application/json","cache-control":"public, max-age="+SEARCH_TTL}})).catch(()=>{});ctx?.waitUntil?ctx.waitUntil(put):await put}
+ return data;
+}
+function remember(k,data){if(searchMemory.size>=500)searchMemory.delete(searchMemory.keys().next().value);searchMemory.set(k,{data,expiresAt:Date.now()+SEARCH_TTL*1000})}
+// Limite por dispositivo (Workers Rate Limiting). Sem binding configurado, não limita.
+async function withinLimit(limiter,key){if(!limiter||!key)return true;try{return (await limiter.limit({key})).success}catch{return true}}
+function tooFast(message){return new Response(JSON.stringify({error:message,code:"RATE_LIMITED",retryAfterSeconds:60}),{status:429,headers:{"content-type":"application/json","cache-control":"no-store","retry-after":"60"}})}
 function tidalArtistNames(item,included){
  const rel=item.relationships?.artists?.data||[];
  return rel.map(r=>included.find(x=>x.type===r.type&&x.id===r.id)?.attributes?.name).filter(Boolean).join(", ")||"Artista";
 }
 async function tidalSearch(env,q){
- const token=await tidalToken(env),url=new URL("https://openapi.tidal.com/v2/searchResults");
+ const url=new URL("https://openapi.tidal.com/v2/searchResults");
  url.searchParams.set("filter[query]",q);url.searchParams.set("countryCode","PT");url.searchParams.set("include","tracks.artists,tracks.albums");
- const response=await fetch(url,{headers:{"Authorization":"Bearer "+token,"Accept":"application/vnd.api+json"}});
- const payload=await response.json();
+ const {response,payload}=await tidalGet(env,url);
  if(!response.ok)throw new Error("A pesquisa TIDAL não está disponível ("+response.status+"): "+(payload.errors?.[0]?.detail||payload.errors?.[0]?.title||"erro da API"));
- const root=(payload.data||[]).find(x=>x.type==="searchResults")||(Array.isArray(payload.data)?payload.data[0]:payload.data);
+ const root=Array.isArray(payload.data)?(payload.data.find(x=>x.type==="searchResults")||payload.data[0]):payload.data;
  const included=payload.included||[];
  const refs=root?.relationships?.tracks?.data||[];
  const tracks=refs.map(ref=>included.find(x=>x.type===ref.type&&x.id===ref.id)).filter(Boolean);
  return tracks.slice(0,8).map(t=>({tidalId:t.id,title:t.attributes?.title||"Sem título",artist:tidalArtistNames(t,included),album:(t.relationships?.albums?.data||[]).map(r=>included.find(x=>x.type===r.type&&x.id===r.id)?.attributes?.title).filter(Boolean)[0]||"",duration:t.attributes?.duration||0,source:"tidal"}));
 }
 async function tidalSuggestions(env,q){
- const token=await tidalToken(env),url=new URL("https://openapi.tidal.com/v2/searchSuggestions");
+ const url=new URL("https://openapi.tidal.com/v2/searchSuggestions");
  url.searchParams.set("filter[query]",q);url.searchParams.set("countryCode","PT");
- const response=await fetch(url,{headers:{"Authorization":"Bearer "+token,"Accept":"application/vnd.api+json"}});
- const payload=await response.json();
+ const {response,payload}=await tidalGet(env,url);
  if(!response.ok)return [];
  return (payload.data||[]).slice(0,5).map(x=>x.attributes?.query||x.attributes?.text||x.id||"").filter(Boolean);
 }
@@ -45,6 +87,10 @@ async function claimCooldown(env,eventId,key,scope){
  const claimed=await env.DB.prepare("INSERT INTO voting_cooldowns(event_id,voter_key,scope,voted_at) VALUES(?,?,?,CURRENT_TIMESTAMP) ON CONFLICT(event_id,voter_key,scope) DO UPDATE SET voted_at=CURRENT_TIMESTAMP WHERE datetime(voting_cooldowns.voted_at)<=datetime('now','-5 minutes') RETURNING voted_at").bind(eventId,key,scope).first();
  if(claimed)return {ok:true};
  return {ok:false,retryAfterSeconds:await cooldownRemaining(env,eventId,key,scope)};
+}
+function searchCooldownError(seconds){
+ const mins=Math.max(1,Math.ceil(seconds/60));
+ return new Response(JSON.stringify({error:"JÁ SUGERISTE UMA MÚSICA. PODES PESQUISAR DE NOVO EM "+mins+" MIN.",code:"SEARCH_COOLDOWN",retryAfterSeconds:seconds}),{status:429,headers:{"content-type":"application/json","cache-control":"no-store","retry-after":String(Math.max(1,seconds))}});
 }
 function cooldownError(seconds){
  const mins=Math.max(1,Math.ceil(seconds/60));
@@ -64,7 +110,7 @@ async function state(env,e,key){
  ]);
  return {event:{code:e.code,title:env.EVENT_TITLE||e.title,activeMoment:e.active_moment},messages:msgs.results,tracks:tracks.results,poll:poll?{...poll,options:opts.results}:null,voting:{styleWarsRetryAfterSeconds:styleCooldown,musicRetryAfterSeconds:musicCooldown,myStyleWarsOptionId:myVote?.option_id??null}};
 }
-export default {async fetch(req,env){
+export default {async fetch(req,env,ctx){
  const u=new URL(req.url);
  let p=u.pathname;
  const aliases={"/qr":"/qr.html","/guest":"/guest.html","/admin":"/admin.html","/room":"/room.html"};
@@ -75,7 +121,7 @@ export default {async fetch(req,env){
  const e=await event(env,m[1]);if(!e)return J({error:"Evento não encontrado"},404);
  const a=m[2],key=req.headers.get("x-voter-key")||"";
  if(a==="state"&&req.method==="GET")return J(await state(env,e,key));
- if(a==="message"&&req.method==="POST"){const b=await req.json(),msg=clean(b.message);if(msg.length<2)return J({error:"Mensagem demasiado curta"},400);await env.DB.prepare("INSERT INTO messages(event_id,guest_name,body) VALUES(?,?,?)").bind(e.id,clean(b.name,40)||"Guest",msg).run();return J({ok:true,moderated:true})}
+ if(a==="message"&&req.method==="POST"){if(!await withinLimit(env.MESSAGE_LIMITER,key))return tooFast("ESTÁS A ENVIAR MENSAGENS DEPRESSA DEMAIS. TENTA DAQUI A UM MINUTO.");const b=await req.json(),msg=clean(b.message);if(msg.length<2)return J({error:"Mensagem demasiado curta"},400);await env.DB.prepare("INSERT INTO messages(event_id,guest_name,body) VALUES(?,?,?)").bind(e.id,clean(b.name,40)||"Guest",msg).run();return J({ok:true,moderated:true})}
  if(a==="poll/vote"&&req.method==="POST"){
   if(!key)return J({error:"Voter key em falta"},400);
   if(e.active_moment!=="m2")return J({error:"Poll fechada"},409);
@@ -90,8 +136,13 @@ export default {async fetch(req,env){
  }
  if(a==="tracks"&&req.method==="GET"){
  const q=clean(u.searchParams.get("q"),100);if(q.length<2)return J({results:[],suggestions:[]});
- try{const [results,suggestions]=await Promise.all([tidalSearch(env,q),tidalSuggestions(env,q)]);return J({results,suggestions});}
- catch(error){return J({error:error.message},503)}
+ if(e.active_moment!=="m1")return J({error:"Sugestões fechadas"},409);
+ if(!key)return J({error:"Voter key em falta"},400);
+ const wait=await cooldownRemaining(env,e.id,key,"music");
+ if(wait>0)return searchCooldownError(wait);
+ if(!await withinLimit(env.SEARCH_LIMITER,key))return tooFast("ESTÁS A PESQUISAR DEPRESSA DEMAIS. ESPERA UM MINUTO.");
+ try{return J(await cachedSearch(env,q,ctx));}
+ catch(error){return J({error:error.message},error.status||503)}
  }
  if(a==="tracks"&&req.method==="POST"){
   const b=await req.json();
