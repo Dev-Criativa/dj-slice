@@ -32,30 +32,47 @@ Requires Node.js 20+.
 
 ```sh
 npm install
-npx wrangler login
+npm run db:local
 npm run dev
 ```
 
-Deploy:
+For the admin panel locally, create `.dev.vars` (not committed) with test values:
 
-```sh
-npm run deploy
+```
+ADMIN_PIN="1234"
+ADMIN_TOKEN="local-test-token"
 ```
 
-D1 migrations:
+### Deploy
+
+Deploys are automatic: **every merge to `main` is built and deployed to production by Cloudflare Workers Builds** (`npx wrangler deploy`). Work on a branch and open a pull request; do not merge during a live event unless you intend to publish.
+
+Non-production branch builds (`wrangler preview`) are not configured for this project and fail by design; they do not affect production.
+
+### D1 migrations
+
+Apply new migrations to production **before** merging the code that needs them:
 
 ```sh
+npx wrangler d1 migrations list dj-slice-db --remote
 npm run db:remote
 ```
 
-Apply only migrations that have not already been applied to the production database. Do not rerun schema setup manually.
+The production database tracks applied migrations in `d1_migrations` (0001–0003 are recorded), so `db:remote` only applies new files.
 
 ## Cloudflare configuration
 
 - Worker: `dj-slice`
 - D1 binding: `DB`
 - Assets binding: `ASSETS`
+- Rate limiting bindings: `SEARCH_LIMITER` (15/min per device), `MESSAGE_LIMITER` (3/min per device)
 - Event code: `PARTY2026`
 - Public event title: `PEDE & FATIA`
 
-Production secrets are configured in the Cloudflare Worker environment; do not commit them.
+Secrets (set in the Cloudflare Worker, never committed): `ADMIN_PIN`, `ADMIN_TOKEN`, `TIDAL_CLIENT_ID`, `TIDAL_CLIENT_SECRET`, and optionally `TIDAL_CLIENT_ID_2`/`TIDAL_CLIENT_SECRET_2` (up to `_5`) for extra TIDAL credentials.
+
+## Guest mechanics
+
+- **M1 music:** search TIDAL, suggest a track or vote on the projector top 5. Suggesting or voting starts a 5-minute per-device cooldown that also locks search.
+- **Farmador de Aura (messages, M1/M2):** messages are moderated in Admin. While a guest's message is pending their input is locked; they then see whether it was rejected or published. Admin can ban a device from sending messages (BANIR / DESBANIR).
+- Devices are identified by a random key stored in the browser (`ee-voter`); a private window counts as a new device.
