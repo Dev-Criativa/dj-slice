@@ -57,6 +57,8 @@ async function draw() {
       return;
     }
     renderedMoment = moment;
+    content.classList.remove('m4-content','pizza-content');
+    document.querySelector('.mobile')?.classList.remove('m4-mode','pizza-mode');
 
     if (moment === 'm1') {
       content.innerHTML = '<h2>Sugere uma música</h2><p id="music-vote-status" class="vote-cooldown" role="status" hidden></p><div class="track-search"><input id="q" autocomplete="off" placeholder="Pesquisa por música ou artista"><div id="suggestions" class="track-suggestions"></div><div id="results" class="track-results"></div></div><hr><h2>Mural de mensagens</h2><input id="name" placeholder="O teu nome"><textarea id="msg" placeholder="Escreve uma mensagem"></textarea><button id="send">ENVIAR PARA APROVAÇÃO</button>';
@@ -69,9 +71,11 @@ async function draw() {
       bindMessage();
     } else if (moment === 'm3') {
       content.innerHTML = '<div class="device-call"><h2>MIDNIGHT<br><em>SLICE.</em></h2><p>A PIZZA ESTÁ SERVIDA. VAI BUSCAR A TUA FATIA.</p></div>';
-    } else {
+    } else if (moment === 'm4') {
       content.innerHTML = '<div class="device-call" data-m4-trigger><h2>TURN ON<br><em>THE LIGHTS.</em></h2><p>LIGA A LANTERNA DO TEU TELEMÓVEL.</p></div>';
-      if (moment === 'm4') window.renderM4?.();
+      window.renderM4?.();
+    } else if (moment === 'm5') {
+      window.renderPizza?.();
     }
   } catch (error) {
     document.querySelector('#content').textContent = error.message;

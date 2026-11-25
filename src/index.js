@@ -126,7 +126,7 @@ export default {async fetch(req,env){
    ]);
    return J({pending:pending.results,messages:all.results});
  }
- if(a==="moment"&&req.method==="POST"){const b=await req.json();if(!["m1","m2","m3","m4"].includes(b.moment))return J({error:"Momento inválido"},400);await env.DB.prepare("UPDATE events SET active_moment=? WHERE id=?").bind(b.moment,e.id).run();return J({ok:true})}
+ if(a==="moment"&&req.method==="POST"){const b=await req.json();if(!["m1","m2","m3","m4","m5"].includes(b.moment))return J({error:"Momento inválido"},400);await env.DB.prepare("UPDATE events SET active_moment=? WHERE id=?").bind(b.moment,e.id).run();return J({ok:true})}
  if(a.startsWith("message/")&&req.method==="PATCH"){
    const id=Number(a.split("/")[1]),b=await req.json();
    if(!Number.isInteger(id)||id<1)return J({error:"Mensagem inválida"},400);

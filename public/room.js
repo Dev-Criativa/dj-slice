@@ -49,11 +49,11 @@ async function draw(){
     const qr=el('join-qr');
     qr.classList.toggle('visible',moment==='m1'||moment==='m2');
     setupProjectorQR();
-    document.querySelector('.room-screen').classList.toggle('moment-call',moment==='m3'||moment==='m4');
+    document.querySelector('.room-screen').classList.toggle('moment-call',moment==='m3'||moment==='m4'||moment==='m5');
     el('event-brand').textContent='PEDE & FATIA';
     document.title='PEDE & FATIA — Projecção';
     el('moment').textContent=moment.toUpperCase();
-    el('dashboard').hidden=moment==='m3'||moment==='m4';
+    el('dashboard').hidden=moment==='m3'||moment==='m4'||moment==='m5';
 
     if(moment==='m1'){
       el('headline').innerHTML='O que toca<br><em>a seguir?</em>';
@@ -69,9 +69,12 @@ async function draw(){
     }else if(moment==='m3'){
       el('headline').innerHTML='MIDNIGHT<br><em>SLICE.</em>';
       el('body').textContent='A PIZZA ESTÁ SERVIDA. VAI BUSCAR A TUA FATIA.';
-    }else{
+    }else if(moment==='m4'){
       el('headline').innerHTML='TURN ON<br><em>THE LIGHTS.</em>';
       el('body').textContent='LIGA A LANTERNA DO TEU TELEMÓVEL.';
+    }else{
+      el('headline').innerHTML='GRAB A<br><em>PIZZA SLICE!</em>';
+      el('body').textContent='TROCA UMA FICHA POR UMA FATIA.';
     }
   }catch(error){el('body').textContent='À espera de ligação ao evento…'}
 }

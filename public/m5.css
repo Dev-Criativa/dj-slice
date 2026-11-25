@@ -1,0 +1,27 @@
+/* M5 PIZZA — same PEDE & FATIA identity, independent of M4 */
+.mobile.pizza-mode{width:100%;max-width:none;height:100vh;height:100svh;min-height:0;overflow:hidden;display:flex;flex-direction:column;padding:env(safe-area-inset-top) 4vw calc(env(safe-area-inset-bottom) + 14px);margin:0}
+html:has(.mobile.pizza-mode),html:has(.mobile.pizza-mode) body{width:100%;height:100%;overflow:hidden;overscroll-behavior:none}
+body:has(.mobile.pizza-mode){position:fixed;inset:0;height:100%;overflow:hidden}
+.mobile.pizza-mode header{flex:none;height:clamp(48px,7.5svh,68px);margin:0 0 clamp(10px,2svh,18px);padding:0 0 8px}
+.mobile.pizza-mode header b{font-size:clamp(26px,6.76vw,35px)}
+.mobile.pizza-mode header small{font-size:clamp(13px,3.38vw,14.3px)}
+.mobile.pizza-mode>#title,.mobile.pizza-mode>#intro{display:none!important}
+.mobile.pizza-mode #content.pizza-content{flex:1;min-height:0;margin:0;padding:0;border:0;background:transparent;box-shadow:none;overflow:hidden;display:grid;grid-template-rows:auto minmax(0,1fr) auto auto;gap:0}
+.mobile.pizza-mode .pizza-headline{margin:0!important;padding:0;color:var(--fg);font:700 clamp(66px,17.8vw,108px)/.79 'Space Grotesk';letter-spacing:-.095em;text-align:left;display:flex;flex-direction:column;text-transform:uppercase}
+.mobile.pizza-mode .pizza-headline span{color:var(--fg)}
+.mobile.pizza-mode .pizza-headline em{font-style:normal;color:#c52b4a}
+.mobile.pizza-mode .pizza-art{min-height:0;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.mobile.pizza-mode .pizza-illustration{display:block;width:100%;height:100%;max-height:100%;overflow:visible}
+.mobile.pizza-mode .pizza-instruction{margin:clamp(5px,1.2svh,12px) 0 clamp(10px,2svh,18px);color:#f0c36e;text-align:center;font:500 clamp(13px,3.6vw,17px)/1.45 'DM Mono';letter-spacing:.12em}
+.mobile.pizza-mode .pizza-claim{width:100%;min-height:clamp(58px,8.5svh,76px);margin:0;padding:12px;background:#f0c36e;color:#1b1713;border:1px solid #f0c36e;font:700 clamp(14px,3.8vw,17px) 'DM Mono';letter-spacing:.06em}
+.mobile.pizza-mode .pizza-claim span{font-size:1.5em;margin-right:12px}
+.pizza-modal{position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.78);display:none;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(5px)}
+.pizza-modal.visible{display:flex}
+.pizza-modal-card{position:relative;width:min(100%,440px);padding:34px 26px 26px;background:#171513;color:#f2eee5;border:1px solid #e7b85f;box-shadow:0 18px 70px rgba(0,0,0,.55);text-align:left}
+.pizza-modal-close{position:absolute;right:12px;top:10px;width:38px;height:38px;padding:0;margin:0;background:transparent;color:#f0c36e;border:1px solid #72572e;font:28px/1 'Space Grotesk'}
+.pizza-modal-kicker{margin:0 0 18px;color:#f0c36e;font:11px 'DM Mono';letter-spacing:.18em}
+.pizza-modal-card h3{margin:0 0 18px;font:700 clamp(32px,9vw,48px)/.9 'Space Grotesk';letter-spacing:-.06em}
+.pizza-modal-card>p:not(.pizza-modal-kicker){font:500 17px/1.5 'Space Grotesk';color:#e7dfd2}
+.pizza-modal-card strong{display:block;margin:20px 0;color:#d02e4c;font:700 clamp(22px,6vw,30px)/1 'Space Grotesk';letter-spacing:-.04em}
+.pizza-modal-ok{width:100%;margin:12px 0 0;background:#f0c36e;color:#171513;font:700 12px 'DM Mono'}
+@media(max-height:740px){.mobile.pizza-mode header{height:44px;margin-bottom:7px}.mobile.pizza-mode .pizza-headline{font-size:clamp(58px,15vw,88px)}.mobile.pizza-mode .pizza-instruction{margin:4px 0 8px;font-size:12px}.mobile.pizza-mode .pizza-claim{min-height:52px}}
