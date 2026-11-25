@@ -549,3 +549,7 @@ button.active{outline-color:var(--acid)}
 .dj-votes{font:700 14px 'DM Mono';color:#f0c36e}
 .dj-now-track strong{font-weight:700}
 .dj-now-track em{font:600 17px 'Space Grotesk';color:#e7dfd2;font-style:normal}
+
+/* Projector: mais 50% de espaço entre músicas do ranking */
+#primary-content{gap:clamp(12px,1.35vh,19.5px)}
+@media(max-width:700px){#primary-content{gap:10.5px}}
