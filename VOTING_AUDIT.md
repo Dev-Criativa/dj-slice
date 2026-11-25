@@ -91,3 +91,32 @@ The M2 moment selector currently displays `M2 · SONG WARS`, although this poll 
 ## Limitations
 
 This is a static review. No D1 production writes, live API calls, browser automation, or Cloudflare deployment were performed. Findings describe code paths visible in this branch and should be verified with automated tests before merging.
+
+
+---
+
+# Implementation update — branch only
+
+The audit findings above have now been addressed in this branch:
+
+- Added migration `0002_voting_cooldowns.sql` with a server-side cooldown per event, device and voting area (`style_wars` / `music`).
+- The Worker claims the cooldown atomically in D1. A repeated vote inside five minutes returns HTTP 429, a `Retry-After` header and `retryAfterSeconds`.
+- Both guest flows display the requested Portuguese cooldown message.
+- Style Wars validates that the selected option belongs to the active poll. The guest view keeps the recorded selection and cooldown state through its automatic refresh.
+- Music suggestions now create a vote event on each accepted five-minute window, including repeat votes for the same track.
+- Music ranking totals use a baseline table plus legacy vote rows and new vote events, preserving existing aggregate totals during migration.
+- Admin now labels M2 as **STYLE WARS**.
+
+## Validation performed
+
+- Reviewed the changed Worker and guest/admin client paths.
+- Executed the migration's cooldown table/constraint and the atomic cooldown upsert against an in-memory SQLite database: first vote accepted, immediate retry blocked, positive retry time returned.
+- No production D1 migration was run. No live Cloudflare API test or browser/device test was performed.
+
+## Deployment order
+
+1. Apply `0002_voting_cooldowns.sql` to the D1 database.
+2. Deploy the Worker and updated public assets.
+3. Run the manual test cases above on two separate devices, including a retry just before and just after the five-minute boundary.
+
+**Important:** Do not deploy the Worker before applying the migration; the new vote routes and state response require the new tables.
