@@ -550,6 +550,8 @@ button.active{outline-color:var(--acid)}
 .dj-now-track strong{font-weight:700}
 .dj-now-track em{font:600 17px 'Space Grotesk';color:#e7dfd2;font-style:normal}
 
-/* Projector: mais 50% de espaço entre músicas do ranking */
-#primary-content{gap:clamp(12px,1.35vh,19.5px)}
-@media(max-width:700px){#primary-content{gap:10.5px}}
+/* Projector: espaço entre músicas do ranking (3x o original onde há altura; encolhe em ecrãs baixos para caberem as 5) */
+#primary-content{gap:clamp(12px,2.7vh,39px)}
+@media(max-width:700px){#primary-content{gap:21px}}
+@media(max-height:740px) and (min-width:701px){#primary-content{gap:12px}}
+@media(max-height:740px) and (min-width:701px){#primary-panel:has(#now-playing:not([hidden])) #primary-content{gap:6px}}
