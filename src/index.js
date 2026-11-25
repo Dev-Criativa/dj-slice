@@ -70,7 +70,9 @@ async function tidalSearch(env,q){
  const included=payload.included||[];
  const refs=root?.relationships?.tracks?.data||[];
  const tracks=refs.map(ref=>included.find(x=>x.type===ref.type&&x.id===ref.id)).filter(Boolean);
- return tracks.slice(0,8).map(t=>({tidalId:t.id,title:t.attributes?.title||"Sem título",artist:tidalArtistNames(t,included),album:(t.relationships?.albums?.data||[]).map(r=>included.find(x=>x.type===r.type&&x.id===r.id)?.attributes?.title).filter(Boolean)[0]||"",duration:t.attributes?.duration||0,source:"tidal"}));
+ const seen=new Set(),unique=[];
+ for(const t of tracks){const k=((t.attributes?.title||"")+"|"+tidalArtistNames(t,included)).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/\s+/g," ").trim();if(seen.has(k))continue;seen.add(k);unique.push(t)}
+ return unique.slice(0,8).map(t=>({tidalId:t.id,title:t.attributes?.title||"Sem título",artist:tidalArtistNames(t,included),album:(t.relationships?.albums?.data||[]).map(r=>included.find(x=>x.type===r.type&&x.id===r.id)?.attributes?.title).filter(Boolean)[0]||"",duration:t.attributes?.duration||0,source:"tidal"}));
 }
 async function tidalSuggestions(env,q){
  const url=new URL("https://openapi.tidal.com/v2/searchSuggestions");
