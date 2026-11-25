@@ -1,0 +1,51 @@
+/* M3 — Midnight Slice: mesma linguagem visual do M4 (ecrã inteiro, título vermelho, ilustração, texto em DM Mono) */
+html:has(.mobile.m3-mode),html:has(.mobile.m3-mode) body{width:100%;height:100%;min-height:0;overflow:hidden;overscroll-behavior:none}
+body:has(.mobile.m3-mode){position:fixed;inset:0;min-height:0;width:100%;height:100%;overflow:hidden}
+.mobile.m3-mode{
+ width:100%;max-width:none;height:100vh;height:100dvh;min-height:0;margin:0;overflow:hidden;
+ padding:env(safe-area-inset-top) 4vw calc(env(safe-area-inset-bottom) + clamp(12px,2.2svh,22px));
+ display:flex;flex-direction:column;
+}
+.mobile.m3-mode>#title,.mobile.m3-mode>#intro{display:none!important}
+.mobile.m3-mode header{flex:none;height:clamp(48px,7.5svh,68px);min-height:0;margin:0 0 clamp(8px,1.8svh,18px);padding:0 0 8px}
+.mobile.m3-mode header b{font-size:clamp(26px,6.76vw,35px)}
+.mobile.m3-mode header small{font-size:clamp(13px,3.38vw,14.3px)}
+.mobile.m3-mode #content.m3-content{
+ flex:1 1 auto;min-height:0;width:100%;max-width:100%;overflow:hidden;
+ margin:0;padding:0;border:0;background:transparent;box-shadow:none;
+ display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto auto;gap:0;
+}
+.mobile.m3-mode #content.m3-content>*{min-width:0;max-width:100%}
+.mobile.m3-mode #content.m3-content .m3-headline{
+ margin:0 0 clamp(5px,1.3svh,12px)!important;text-align:center;color:var(--red);
+ font:700 min(19vw,11.5svh,130px)/.82 'Space Grotesk'!important;letter-spacing:-.105em!important;
+ text-transform:uppercase;overflow:hidden;padding-right:.08em;
+}
+.mobile.m3-mode #content.m3-content .m3-headline span{display:block;white-space:nowrap}
+.mobile.m3-mode #content.m3-content .m3-visual{min-height:0;height:100%;width:100%;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.mobile.m3-mode #content.m3-content .m3-visual img{width:100%;height:100%;object-fit:contain;object-position:center;display:block;filter:contrast(1.04) drop-shadow(0 0 clamp(18px,5vw,36px) rgba(240,201,120,.18))}
+.mobile.m3-mode #content.m3-content .m3-visual.is-missing img{display:none}
+.mobile.m3-mode #content.m3-content .m3-instruction{
+ margin:clamp(10px,2svh,18px) 0 clamp(12px,2.4svh,22px);text-align:center;color:var(--acid);
+ font:500 clamp(13px,3.8vw,17px)/1.35 'DM Mono';letter-spacing:.12em;overflow-wrap:anywhere;
+}
+@media(max-height:760px){
+ .mobile.m3-mode header{height:46px;margin-bottom:6px}
+ .mobile.m3-mode header b{font-size:clamp(24px,6.2vw,31px)}
+ .mobile.m3-mode #content.m3-content .m3-headline{font-size:min(19vw,10.5svh,118px)!important}
+ .mobile.m3-mode #content.m3-content .m3-instruction{margin-top:8px;font-size:12px}
+}
+
+/* Botão igual ao da lanterna (M4) */
+.mobile.m3-mode #content.m3-content .m3-button{
+ width:100%;min-height:clamp(58px,8.5svh,76px);margin:0;padding:10px 12px;
+ display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:13px;text-align:center;
+ background:var(--acid);color:#211b14;border:1px solid rgba(240,201,120,.8);
+ font:700 clamp(13px,3.7vw,16px) 'DM Mono';letter-spacing:.075em;
+}
+.mobile.m3-mode #content.m3-content .m3-button-icon{font-size:22px;line-height:1;border-right:1px solid rgba(33,27,20,.35);padding-right:13px}
+.m3-modal .pizza-modal-card strong{text-transform:uppercase}
+@media(max-height:760px){
+ .mobile.m3-mode #content.m3-content .m3-instruction{margin-bottom:9px}
+ .mobile.m3-mode #content.m3-content .m3-button{min-height:52px}
+}
