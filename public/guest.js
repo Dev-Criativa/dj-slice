@@ -116,14 +116,17 @@ async function draw() {
     document.querySelector('.mobile')?.classList.remove('m3-mode','m4-mode','pizza-mode');
 
     if (moment === 'm1') {
-      content.innerHTML = '<h2>Sugere uma música</h2><p id="music-vote-status" class="vote-cooldown" role="status" hidden></p><div class="track-search"><input id="q" autocomplete="off" placeholder="Pesquisa por música ou artista"><div id="suggestions" class="track-suggestions"></div><div id="results" class="track-results"></div></div><h2>Vota nas que já estão na lista</h2><p id="guest-now" class="guest-now" hidden></p><div id="top-tracks" class="track-results"></div><hr><h2>Farmador de Aura</h2><p id="aura-status" class="vote-cooldown" role="status" hidden></p><input id="name" placeholder="O teu nome"><textarea id="msg" placeholder="Escreve uma mensagem"></textarea><button id="send">ENVIAR PARA APROVAÇÃO</button>';
+      content.innerHTML = '<section class="guest-block block-suggest"><h2>Sugere uma música</h2><p id="music-vote-status" class="vote-cooldown" role="status" hidden></p><div class="track-search"><input id="q" autocomplete="off" placeholder="Pesquisa por música ou artista"><div id="suggestions" class="track-suggestions"></div><div id="results" class="track-results"></div></div></section>'
+        + '<section class="guest-block block-vote"><h2>Vota nas que já estão na lista</h2><p id="guest-now" class="guest-now" hidden></p><div id="top-tracks" class="track-results"></div></section>'
+        + '<section class="guest-block block-aura"><h2>Farmador de Aura</h2><p id="aura-status" class="vote-cooldown" role="status" hidden></p><input id="name" placeholder="O teu nome"><textarea id="msg" placeholder="Escreve uma mensagem"></textarea><button id="send">ENVIAR PARA APROVAÇÃO</button></section>';
       renderMusicStatus(d.voting);
       renderTopTracks(d.tracks, d.voting);
       bindTrackSearch();
       bindMessage();
       renderAura(d.myMessage, d.banned);
     } else if (moment === 'm2') {
-      content.innerHTML = '<h2 id="poll-question">A carregar votação…</h2><div id="poll-options"></div><hr><h2>Farmador de Aura</h2><p id="aura-status" class="vote-cooldown" role="status" hidden></p><input id="name" placeholder="O teu nome"><textarea id="msg" placeholder="Escreve uma mensagem"></textarea><button id="send">ENVIAR PARA APROVAÇÃO</button>';
+      content.innerHTML = '<section class="guest-block block-poll"><h2 id="poll-question">A carregar votação…</h2><div id="poll-options"></div></section>'
+        + '<section class="guest-block block-aura"><h2>Farmador de Aura</h2><p id="aura-status" class="vote-cooldown" role="status" hidden></p><input id="name" placeholder="O teu nome"><textarea id="msg" placeholder="Escreve uma mensagem"></textarea><button id="send">ENVIAR PARA APROVAÇÃO</button></section>';
       renderPoll(d.poll, d.voting);
       bindMessage();
       renderAura(d.myMessage, d.banned);

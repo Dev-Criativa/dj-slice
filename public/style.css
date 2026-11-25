@@ -605,3 +605,13 @@ button.active{outline-color:var(--acid)}
 .dj-now:has(.dj-now-track){border-color:#40be6e;background:rgba(64,190,110,.12)}
 .dj-now:has(.dj-now-track)>small{color:#7be29b}
 .dj-now .dj-now-track button{background:#40be6e!important;color:#0f1a12!important;border-color:#40be6e!important}
+
+/* Telemóvel M1/M2: cada zona num bloco com fundo próprio */
+.mobile .guest-block{margin:0 0 14px;padding:16px 14px 14px;border:1px solid #4a4238;border-radius:3px}
+.mobile .guest-block:last-child{margin-bottom:0}
+.mobile .guest-block>h2:first-child{margin-top:0}
+.mobile .block-suggest{background:linear-gradient(180deg,rgba(240,201,120,.13),rgba(240,201,120,.05));border-color:rgba(240,201,120,.42)}
+.mobile .block-vote,.mobile .block-poll{background:rgba(12,11,10,.55);border-color:#3e3830}
+.mobile .block-aura{background:linear-gradient(180deg,rgba(208,46,76,.16),rgba(208,46,76,.06));border-color:rgba(208,46,76,.45)}
+.mobile .block-aura textarea,.mobile .block-aura input{background:rgba(10,9,8,.75)}
+.mobile #content:has(.guest-block){background:transparent;border:0;padding:0;box-shadow:none}
