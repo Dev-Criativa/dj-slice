@@ -591,3 +591,17 @@ button.active{outline-color:var(--acid)}
 .mobile #results .track-result:hover,.mobile #results .track-result:focus-visible{border-color:#f0c36e}
 .mobile #results .search-status{margin:0 0 8px}
 .mobile #results:not(:empty){margin-bottom:18px}
+
+/* DJ: todas as votadas numa lista com scroll; a que está a tocar fica na lista, a verde */
+.dj-scroll{max-height:calc(100vh - 330px);max-height:calc(100dvh - 330px);min-height:260px;overflow-y:auto;overscroll-behavior:contain;padding-right:4px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);scrollbar-color:#f0c36e #1d1a17}
+.dj-scroll .dj-list{padding:8px 0}
+.dj-head h2 span{color:#f0c36e}
+.dj-item.is-playing{background:rgba(64,190,110,.16);border-color:#40be6e;box-shadow:inset 4px 0 0 #40be6e}
+.dj-item.is-playing .dj-rank,.dj-item.is-playing .dj-votes{color:#7be29b}
+.dj-badge{padding:3px 8px;background:#40be6e;color:#0f1a12;font:700 10px 'DM Mono';letter-spacing:.14em;white-space:nowrap}
+.dj-item{grid-template-columns:2.2em minmax(0,1fr) auto auto auto}
+.dj-actions .dj-done{background:#40be6e;color:#0f1a12;border-color:#40be6e}
+@media(max-width:620px){.dj-item{grid-template-columns:2em minmax(0,1fr) auto}.dj-badge{grid-column:3;grid-row:1}.dj-scroll{max-height:none;overflow:visible}}
+.dj-now:has(.dj-now-track){border-color:#40be6e;background:rgba(64,190,110,.12)}
+.dj-now:has(.dj-now-track)>small{color:#7be29b}
+.dj-now .dj-now-track button{background:#40be6e!important;color:#0f1a12!important;border-color:#40be6e!important}

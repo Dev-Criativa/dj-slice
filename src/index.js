@@ -216,7 +216,9 @@ export default {async fetch(req,env,ctx){
  }
  if(a==="dj"&&req.method==="GET"){
   if(!await isDj(req,env,e.id))return J({error:"Acesso DJ necessário"},401);
-  const queue=(await queuedTracks(env,e.id,15)).results;
+  // Todas as músicas votadas ainda por tocar, incluindo a que está a tocar (fica na lista, marcada, até ser "Tocada").
+  let queue;try{queue=(await env.DB.prepare("SELECT t.id,t.title,t.artist,t.play_status AS status,"+TRACK_VOTES+" AS votes FROM tracks t WHERE t.event_id=? AND t.play_status IN ('queued','playing') ORDER BY votes DESC,t.id ASC LIMIT 1000").bind(e.id).all()).results}
+  catch{queue=(await queuedTracks(env,e.id,1000)).results}
   let played=[];try{played=(await env.DB.prepare("SELECT t.id,t.title,t.artist,t.played_at,"+TRACK_VOTES+" AS votes FROM tracks t WHERE t.event_id=? AND t.play_status='played' ORDER BY t.played_at DESC,t.id DESC LIMIT 50").bind(e.id).all()).results}catch{}
   return J({event:{code:e.code,title:env.EVENT_TITLE||e.title,activeMoment:e.active_moment},nowPlaying:await nowPlaying(env,e.id),queue,played});
  }
@@ -229,7 +231,8 @@ export default {async fetch(req,env,ctx){
   if(!track)return J({error:"Música não encontrada"},404);
   try{
    if(b.status==="playing")await env.DB.batch([
-    env.DB.prepare("UPDATE tracks SET play_status='played',played_at=CURRENT_TIMESTAMP WHERE event_id=? AND play_status='playing' AND id<>?").bind(e.id,id),
+    // A anterior volta à lista (só passa a "Tocada" quando o DJ a marca).
+    env.DB.prepare("UPDATE tracks SET play_status='queued' WHERE event_id=? AND play_status='playing' AND id<>?").bind(e.id,id),
     env.DB.prepare("UPDATE tracks SET play_status='playing',played_at=NULL WHERE id=? AND event_id=?").bind(id,e.id)]);
    else if(b.status==="played")await env.DB.prepare("UPDATE tracks SET play_status='played',played_at=CURRENT_TIMESTAMP WHERE id=? AND event_id=?").bind(id,e.id).run();
    else await env.DB.prepare("UPDATE tracks SET play_status='queued',played_at=NULL WHERE id=? AND event_id=?").bind(id,e.id).run();
