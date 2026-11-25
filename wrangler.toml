@@ -24,6 +24,11 @@ name = "MESSAGE_LIMITER"
 namespace_id = "2026002"
 simple = { limit = 3, period = 60 }
 
+[[ratelimits]]
+name = "LOGIN_LIMITER"
+namespace_id = "2026003"
+simple = { limit = 10, period = 60 }
+
 [vars]
 EVENT_CODE = "PARTY2026"
 EVENT_TITLE = "PEDE & FATIA"

@@ -557,3 +557,10 @@ button.active{outline-color:var(--acid)}
 #primary-content .room-ranking[hidden]{display:none!important}
 #primary-content .room-ranking{flex:none}
 .room-now[hidden]{display:none!important}
+
+/* Admin · PIN do DJ */
+.dj-pin-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.dj-pin-row input{width:9em;margin:0;font:700 22px 'DM Mono';letter-spacing:.3em;text-align:center}
+.dj-pin-row button{margin:0}
+.dj-pin-msg{min-height:1.2em}
+.dj-pin-show{font:700 26px 'DM Mono';letter-spacing:.3em;color:#f0c36e}

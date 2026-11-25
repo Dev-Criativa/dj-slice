@@ -16,6 +16,45 @@ function openScreen(key) {
   if (w) w.focus(); else alert('O browser bloqueou a janela. Permite pop-ups para este site.');
 }
 
+// PIN do DJ: o admin cria/muda quando quiser. O PIN só é mostrado no momento em que é guardado.
+async function loadDjPin() {
+  const state = document.querySelector('#djPinState');
+  if (!state) return;
+  try {
+    const d = await a('dj-pin');
+    state.textContent = d.unavailable ? 'PIN do DJ indisponível até ser aplicada a migração 0005.'
+      : d.set ? 'O DJ tem PIN próprio (definido ' + String(d.updatedAt || '').replace('T', ' ').slice(0, 16) + ' UTC). Com ele só entra no ecrã do DJ.'
+      : 'Sem PIN próprio: o DJ entra com o PIN do admin (e fica com acesso ao admin).';
+    document.querySelector('#djPinDel').hidden = !d.set;
+  } catch (error) { state.textContent = error.message; }
+}
+function bindDjPin() {
+  const input = document.querySelector('#djPin'), msg = document.querySelector('#djPinMsg');
+  if (!input) return;
+  input.oninput = () => { input.value = input.value.replace(/\D/g, '').slice(0, 4); };
+  document.querySelector('#djPinGen').onclick = () => {
+    const n = crypto.getRandomValues(new Uint32Array(1))[0] % 10000;
+    input.value = String(n).padStart(4, '0');
+    msg.textContent = 'PIN gerado. Carrega em GUARDAR PIN DO DJ para o activar.';
+  };
+  document.querySelector('#djPinSave').onclick = async () => {
+    const pin = input.value;
+    if (!/^\d{4}$/.test(pin)) { msg.textContent = 'O PIN tem de ter 4 números.'; return; }
+    try {
+      await a('dj-pin', {method:'POST', body:JSON.stringify({pin})});
+      msg.innerHTML = 'PIN do DJ activo: <strong class="dj-pin-show">' + pin + '</strong> — passa-o ao DJ agora; depois não volta a ser mostrado. A sessão anterior do DJ foi terminada.';
+      input.value = '';
+      loadDjPin();
+    } catch (error) { msg.textContent = error.message; }
+  };
+  document.querySelector('#djPinDel').onclick = async () => {
+    if (!confirm('Remover o PIN do DJ? A sessão do DJ é terminada e ele passa a precisar do PIN do admin.')) return;
+    try { await a('dj-pin', {method:'DELETE'}); msg.textContent = 'PIN do DJ removido.'; loadDjPin(); }
+    catch (error) { msg.textContent = error.message; }
+  };
+  loadDjPin();
+}
+
 async function a(path, opt = {}) {
   return api(path, {...opt, headers:{...(opt.headers || {}), authorization:'Bearer ' + token}});
 }
@@ -96,6 +135,15 @@ function showTab(tab) {
         <button class="secondary" data-open="room">ABRIR PROJECÇÃO ↗</button>
         <button class="secondary" data-open="dj">ABRIR DJ ↗</button>
       </div>
+      <hr><h2>PIN do DJ</h2>
+      <p id="djPinState">A verificar…</p>
+      <div class="dj-pin-row">
+        <input id="djPin" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="off" placeholder="4 números">
+        <button id="djPinGen" class="secondary">GERAR</button>
+        <button id="djPinSave">GUARDAR PIN DO DJ</button>
+        <button id="djPinDel" class="danger">REMOVER</button>
+      </div>
+      <p id="djPinMsg" class="dj-pin-msg" role="status"></p>
       <hr><h2>Momento activo</h2>
       <div class="moment-controls">
         ${['m1','m2','m3','m4','m5'].map((moment,i) => `<button data-m="${moment}">M${i+1} · ${['MÚSICA','STYLE WARS','MIDNIGHT SLICE','LIGHTS','PIZZA'][i]}</button>`).join('')}
@@ -105,6 +153,7 @@ function showTab(tab) {
       <input id="o1" value="HOUSE"><input id="o2" value="AFROBEATS"><input id="o3" value="TECHNO">
       <button id="save">GUARDAR VOTAÇÃO</button>`;
     view.querySelectorAll('[data-open]').forEach(button => button.onclick = () => openScreen(button.dataset.open));
+    bindDjPin();
     view.querySelectorAll('[data-m]').forEach(button => button.onclick = async () => {
       try {
         await a('moment',{method:'POST',body:JSON.stringify({moment:button.dataset.m})});

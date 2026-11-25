@@ -11,7 +11,7 @@ async function djLogin() {
   const err = document.querySelector('#dj-error');
   err.textContent = '';
   try {
-    const r = await fetch('/api/dj-login', {method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({pin:document.querySelector('#pin').value})});
+    const r = await fetch('/api/dj-login', {method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({pin:document.querySelector('#pin').value,event:CODE})});
     const d = await r.json();
     if (!r.ok || !d.token) throw new Error(d.error || 'PIN incorrecto');
     djToken = d.token;

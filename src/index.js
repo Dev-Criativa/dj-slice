@@ -104,7 +104,15 @@ async function playedError(env,where,...args){
  if(r?.play_status==="playing")return J({error:"ESSA ESTÁ A TOCAR AGORA! ESCOLHE OUTRA.",code:"NOW_PLAYING"},409);
  return null;
 }
-async function isDj(req,env){const t=req.headers.get("authorization")?.replace("Bearer ","");return !!t&&((!!env.DJ_TOKEN&&t===env.DJ_TOKEN)||(!!env.ADMIN_TOKEN&&t===env.ADMIN_TOKEN))}
+async function sha256(text){const d=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(text));return [...new Uint8Array(d)].map(b=>b.toString(16).padStart(2,"0")).join("")}
+function randomHex(bytes){return [...crypto.getRandomValues(new Uint8Array(bytes))].map(b=>b.toString(16).padStart(2,"0")).join("")}
+const DJ_SESSION_HOURS=24;
+// DJ: token do env (DJ_TOKEN), token do admin, ou uma sessão criada com o PIN definido no admin.
+async function isDj(req,env,eventId){const t=req.headers.get("authorization")?.replace("Bearer ","");if(!t)return false;
+ if((env.DJ_TOKEN&&t===env.DJ_TOKEN)||(env.ADMIN_TOKEN&&t===env.ADMIN_TOKEN))return true;
+ try{return !!(await env.DB.prepare("SELECT 1 AS ok FROM dj_sessions WHERE token_hash=? AND event_id=? AND created_at>datetime('now',?)").bind(await sha256(t),eventId,"-"+DJ_SESSION_HOURS+" hours").first())}catch{return false}}
+async function loginAllowed(req,env){if(!env.LOGIN_LIMITER)return true;try{return (await env.LOGIN_LIMITER.limit({key:"login:"+(req.headers.get("cf-connecting-ip")||"unknown")})).success}catch{return true}}
+const LOGIN_SLOW=()=>J({error:"Demasiadas tentativas. Espera um minuto."},429);
 const BAN_TEXT="FARMASTE TUDO MENOS AURA! FOSTE BANID@!";
 // Tolerante a uma base de dados sem a migração 0003 (trata como não banido).
 async function isBanned(env,eventId,key){if(!key)return false;try{return !!(await env.DB.prepare("SELECT 1 AS b FROM bans WHERE event_id=? AND voter_key=?").bind(eventId,key).first())}catch{return false}}
@@ -139,11 +147,14 @@ export default {async fetch(req,env,ctx){
  const aliases={"/qr":"/qr.html","/guest":"/guest.html","/admin":"/admin.html","/room":"/room.html","/dj":"/dj.html"};
  if(aliases[p]){u.pathname=aliases[p];return env.ASSETS.fetch(new Request(u,req));}
  if(!p.startsWith("/api/"))return env.ASSETS.fetch(req);
- if(p==="/api/dj-login"&&req.method==="POST"){const b=await req.json().catch(()=>({}));const pin=String(b.pin??"");
+ if(p==="/api/dj-login"&&req.method==="POST"){if(!await loginAllowed(req,env))return LOGIN_SLOW();const b=await req.json().catch(()=>({}));const pin=String(b.pin??"");
+  const ev=await event(env,String(b.event||env.EVENT_CODE||"PARTY2026"));
+  if(ev&&/^\d{4}$/.test(pin)){try{const acc=await env.DB.prepare("SELECT pin_hash,salt FROM dj_access WHERE event_id=?").bind(ev.id).first();
+   if(acc&&acc.pin_hash===await sha256(acc.salt+":"+pin)){const token=randomHex(24);await env.DB.prepare("INSERT INTO dj_sessions(token_hash,event_id) VALUES(?,?)").bind(await sha256(token),ev.id).run();return J({token,role:"dj"})}}catch{}}
   if(env.DJ_PIN&&env.DJ_TOKEN&&pin===env.DJ_PIN)return J({token:env.DJ_TOKEN,role:"dj"});
   if(env.ADMIN_PIN&&env.ADMIN_TOKEN&&pin===env.ADMIN_PIN)return J({token:env.ADMIN_TOKEN,role:"admin"});
   return J({error:"PIN incorrecto"},401)}
- if(p==="/api/login"&&req.method==="POST"){const b=await req.json();return String(b.pin)===env.ADMIN_PIN&&!!env.ADMIN_TOKEN?J({token:env.ADMIN_TOKEN}):J({error:"PIN incorrecto ou autenticação não configurada"},401)}
+ if(p==="/api/login"&&req.method==="POST"){if(!await loginAllowed(req,env))return LOGIN_SLOW();const b=await req.json();return String(b.pin)===env.ADMIN_PIN&&!!env.ADMIN_TOKEN?J({token:env.ADMIN_TOKEN}):J({error:"PIN incorrecto ou autenticação não configurada"},401)}
  const m=p.match(/^\/api\/([A-Z0-9_-]+)\/(.*)$/i);if(!m)return J({error:"Endpoint inválido"},404);
  const e=await event(env,m[1]);if(!e)return J({error:"Evento não encontrado"},404);
  const a=m[2],key=req.headers.get("x-voter-key")||"";
@@ -202,13 +213,13 @@ export default {async fetch(req,env,ctx){
   return J({ok:true,voteAdded:true});
  }
  if(a==="dj"&&req.method==="GET"){
-  if(!await isDj(req,env))return J({error:"Acesso DJ necessário"},401);
+  if(!await isDj(req,env,e.id))return J({error:"Acesso DJ necessário"},401);
   const queue=(await queuedTracks(env,e.id,15)).results;
   let played=[];try{played=(await env.DB.prepare("SELECT t.id,t.title,t.artist,t.played_at,"+TRACK_VOTES+" AS votes FROM tracks t WHERE t.event_id=? AND t.play_status='played' ORDER BY t.played_at DESC,t.id DESC LIMIT 50").bind(e.id).all()).results}catch{}
   return J({event:{code:e.code,title:env.EVENT_TITLE||e.title,activeMoment:e.active_moment},nowPlaying:await nowPlaying(env,e.id),queue,played});
  }
  if(a.startsWith("dj/track/")&&req.method==="POST"){
-  if(!await isDj(req,env))return J({error:"Acesso DJ necessário"},401);
+  if(!await isDj(req,env,e.id))return J({error:"Acesso DJ necessário"},401);
   const id=Number(a.split("/")[2]),b=await req.json().catch(()=>({}));
   if(!Number.isInteger(id)||id<1)return J({error:"Música inválida"},400);
   if(!["playing","played","queued"].includes(b.status))return J({error:"Estado inválido"},400);
@@ -234,6 +245,26 @@ export default {async fetch(req,env,ctx){
    const banned=new Set(bans.map(b=>b.voter_key));
    const decorate=list=>list.map(m=>({...m,canBan:!!keys[m.id],banned:!!keys[m.id]&&banned.has(keys[m.id])}));
    return J({pending:decorate(pending.results),messages:decorate(all.results),bans:bans.map(b=>({id:b.voter_key,guest_name:b.guest_name,created_at:b.created_at}))});
+ }
+ if(a==="dj-pin"&&req.method==="GET"){
+   try{const r=await env.DB.prepare("SELECT updated_at FROM dj_access WHERE event_id=?").bind(e.id).first();return J({set:!!r,updatedAt:r?.updated_at||null,envPin:!!env.DJ_PIN})}
+   catch{return J({set:false,updatedAt:null,envPin:!!env.DJ_PIN,unavailable:true})}
+ }
+ if(a==="dj-pin"&&req.method==="POST"){
+   const b=await req.json().catch(()=>({}));const pin=String(b.pin??"");
+   if(!/^\d{4}$/.test(pin))return J({error:"O PIN do DJ tem de ter 4 números."},400);
+   if(env.ADMIN_PIN&&pin===String(env.ADMIN_PIN))return J({error:"Escolhe um PIN diferente do PIN do admin."},400);
+   const salt=randomHex(16);
+   try{await env.DB.batch([
+     env.DB.prepare("INSERT INTO dj_access(event_id,pin_hash,salt,updated_at) VALUES(?,?,?,CURRENT_TIMESTAMP) ON CONFLICT(event_id) DO UPDATE SET pin_hash=excluded.pin_hash,salt=excluded.salt,updated_at=CURRENT_TIMESTAMP").bind(e.id,await sha256(salt+":"+pin),salt),
+     env.DB.prepare("DELETE FROM dj_sessions WHERE event_id=?").bind(e.id)])}
+   catch{return J({error:"PIN do DJ indisponível: falta aplicar a migração 0005."},409)}
+   return J({ok:true});
+ }
+ if(a==="dj-pin"&&req.method==="DELETE"){
+   try{await env.DB.batch([env.DB.prepare("DELETE FROM dj_access WHERE event_id=?").bind(e.id),env.DB.prepare("DELETE FROM dj_sessions WHERE event_id=?").bind(e.id)])}
+   catch{return J({error:"PIN do DJ indisponível: falta aplicar a migração 0005."},409)}
+   return J({ok:true});
  }
  if(a==="moment"&&req.method==="POST"){const b=await req.json();if(!["m1","m2","m3","m4","m5"].includes(b.moment))return J({error:"Momento inválido"},400);await env.DB.prepare("UPDATE events SET active_moment=? WHERE id=?").bind(b.moment,e.id).run();return J({ok:true})}
  if(a.startsWith("message/")&&req.method==="PATCH"){
