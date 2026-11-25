@@ -13,7 +13,7 @@ const MOMENTS = [
   ['m2', 'STYLE WARS', 'Votação de estilos e Farmador de Aura'],
   ['m3', 'MIDNIGHT SLICE', 'A pizza está servida'],
   ['m4', 'LIGHTS', 'Lanternas dos telemóveis acesas'],
-  ['m5', 'PIZZA', 'Troca de fichas por fatias']
+  ['m5', 'QR CODE', 'QR de entrada no projector e nos telemóveis']
 ];
 const MENU = [
   {id: 'party', label: 'PARTY CONTROLLER'},

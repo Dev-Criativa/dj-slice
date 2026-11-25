@@ -564,3 +564,17 @@ button.active{outline-color:var(--acid)}
 .dj-pin-row button{margin:0}
 .dj-pin-msg{min-height:1.2em}
 .dj-pin-show{font:700 26px 'DM Mono';letter-spacing:.3em;color:#f0c36e}
+
+/* Projector M5: QR grande de entrada */
+.room-big-qr{display:none}
+.room-screen.moment-qr .room-big-qr{display:block;width:min(52vh,40vw);aspect-ratio:1;margin:3vh 0 0;box-sizing:border-box;padding:clamp(10px,1.4vw,22px);background:#fff;border:8px solid #f0c36e;box-shadow:0 0 0 3px #d02e4c,0 24px 70px rgba(0,0,0,.5)}
+.room-screen.moment-qr .room-big-qr[hidden]{display:none}
+.room-big-qr img,.room-big-qr canvas{display:block;width:100%!important;height:100%!important;image-rendering:pixelated}
+.room-big-qr canvas{display:none!important}
+
+/* Ecrãs largos (projector 16:9): QR à direita, centrado na vertical, sem sair do ecrã */
+@media(min-aspect-ratio:4/3){
+ .room-screen.moment-qr .room-big-qr{position:fixed;right:5vw;top:50%;transform:translateY(-50%);margin:0;width:min(70vh,40vw)}
+ .room-screen.moment-qr h1#headline{width:auto!important;max-width:46vw!important;margin-left:0!important;margin-right:auto!important;align-self:flex-start;text-align:left!important;font-size:min(10vw,20vh)!important}
+ .room-screen.moment-qr #body{max-width:44vw!important;margin-left:0!important;align-self:flex-start;text-align:left!important}
+}

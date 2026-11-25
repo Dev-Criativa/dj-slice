@@ -49,3 +49,20 @@ body:has(.mobile.m3-mode){position:fixed;inset:0;min-height:0;width:100%;height:
  .mobile.m3-mode #content.m3-content .m3-instruction{margin-bottom:9px}
  .mobile.m3-mode #content.m3-content .m3-button{min-height:52px}
 }
+
+/* Popup das instruções da pizza (usado no M3; antes vivia no m5.css) */
+.pizza-modal{position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.78);display:none;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(5px)}
+.pizza-modal.visible{display:flex}
+.pizza-modal-card{position:relative;width:min(100%,440px);padding:34px 26px 26px;background:#171513;color:#f2eee5;border:1px solid #e7b85f;box-shadow:0 18px 70px rgba(0,0,0,.55);text-align:left}
+.pizza-modal-close{position:absolute;right:12px;top:10px;width:38px;height:38px;padding:0;margin:0;background:transparent;color:#f0c36e;border:1px solid #72572e;font:28px/1 'Space Grotesk'}
+.pizza-modal-kicker{margin:0 0 18px;color:#f0c36e;font:11px 'DM Mono';letter-spacing:.18em}
+.pizza-modal-card h3{margin:0 0 18px;font:700 clamp(32px,9vw,48px)/.9 'Space Grotesk';letter-spacing:-.06em}
+.pizza-modal-card>p:not(.pizza-modal-kicker){font:500 17px/1.5 'Space Grotesk';color:#e7dfd2}
+.pizza-modal-card strong{display:block;margin:20px 0;color:#d02e4c;font:700 clamp(22px,6vw,30px)/1 'Space Grotesk';letter-spacing:-.04em}
+.pizza-modal-ok{width:100%;margin:12px 0 0;background:#f0c36e;color:#171513;font:700 12px 'DM Mono'}
+
+/* M5 = QR de entrada (reutiliza o layout de ecrã inteiro do M3) */
+.mobile.m3-mode #content.m5-content .m5-qr-wrap{display:flex;align-items:center;justify-content:center}
+.mobile.m3-mode #content.m5-content .m5-qr{height:100%;max-height:min(78vw,100%);aspect-ratio:1;padding:clamp(10px,3vw,16px);background:#fff;border:6px solid #f0c36e;box-shadow:0 0 0 2px #d02e4c,0 18px 50px rgba(0,0,0,.45)}
+.mobile.m3-mode #content.m5-content .m5-qr img,.mobile.m3-mode #content.m5-content .m5-qr canvas{display:block;width:100%!important;height:100%!important;image-rendering:pixelated}
+.mobile.m3-mode #content.m5-content .m5-qr canvas{display:none!important}
