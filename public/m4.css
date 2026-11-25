@@ -11,3 +11,5 @@
 .mobile #content.m4-content .m4-torch-button.is-on{background:var(--red);color:#fff;border-color:var(--red)}
 .mobile #content.m4-content .m4-status{min-height:28px;margin:10px 0 0;text-align:center;color:var(--muted);font:10px/1.5 'DM Mono';letter-spacing:.06em}
 @media(max-height:720px){.mobile #content.m4-content .m4-headline{font-size:clamp(64px,17vw,88px)!important;margin-bottom:10px!important}.mobile #content.m4-content .m4-visual{height:clamp(150px,38vh,230px)}.mobile #content.m4-content .m4-instruction{margin:10px 0}}
+.mobile.m4-mode>#title,.mobile.m4-mode>#intro{display:none!important}
+.mobile.m4-mode header{margin-bottom:clamp(16px,4vh,28px)}
