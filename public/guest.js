@@ -9,7 +9,7 @@ function renderMusicStatus(voting) {
   const status = document.querySelector('#music-vote-status');
   if (!status) return;
   const wait = Number(voting?.musicRetryAfterSeconds) || 0;
-  status.textContent = wait > 0 ? 'JÁ SUGERISTE UMA MÚSICA. PODES SUGERIR OUTRA EM ' + Math.max(1, Math.ceil(wait / 60)) + ' MIN.' : '';
+  status.textContent = wait > 0 ? 'O TEU VOTO JÁ FOI REGISTADO. PODES SUGERIR OU VOTAR DE NOVO EM ' + Math.max(1, Math.ceil(wait / 60)) + ' MIN.' : '';
   status.hidden = !status.textContent;
   const input = document.querySelector('#q');
   if (input) {
@@ -50,6 +50,32 @@ function renderPoll(poll, voting) {
   });
 }
 
+// Top 5 (o mesmo que o projector mostra), com botão para votar.
+let topTracksKey = '';
+function renderTopTracks(tracks, voting) {
+  const box = document.querySelector('#top-tracks');
+  if (!box) return;
+  const list = (tracks || []).slice(0, 5);
+  const locked = (Number(voting?.musicRetryAfterSeconds) || 0) > 0;
+  const key = JSON.stringify([locked, list.map(t => [t.id, t.votes])]);
+  if (key === topTracksKey) return;
+  topTracksKey = key;
+  box.innerHTML = list.length
+    ? list.map((t, i) => {
+        const votes = Number(t.votes) || 0;
+        return '<button type="button" class="track-result" data-vote="' + esc(t.id) + '"' + (locked ? ' disabled' : '') + '><strong>' + (i + 1) + '. ' + esc(t.title) + '</strong><span>' + esc(t.artist) + ' · ' + votes + (votes === 1 ? ' voto' : ' votos') + '</span></button>';
+      }).join('')
+    : '<p class="search-status">Ainda não há músicas na lista. Sugere a primeira!</p>';
+  box.querySelectorAll('[data-vote]').forEach(button => {
+    const t = list.find(x => String(x.id) === button.dataset.vote);
+    button.onclick = () => showTrackConfirm(t, async () => {
+      await api('track/' + encodeURIComponent(t.id) + '/vote', {method:'POST', body:'{}'});
+      topTracksKey = '';
+      await draw();
+    }, 'CONFIRMAR VOTO');
+  });
+}
+
 async function draw() {
   try {
     const d = await api('state');
@@ -63,10 +89,11 @@ async function draw() {
     // Mantém a interface e os campos intactos; actualiza os dados dinâmicos da poll.
     if (moment === renderedMoment) {
       if (moment === 'm2') renderPoll(d.poll, d.voting);
-      if (moment === 'm1') renderMusicStatus(d.voting);
+      if (moment === 'm1') { renderMusicStatus(d.voting); renderTopTracks(d.tracks, d.voting); }
       return;
     }
     renderedMoment = moment;
+    topTracksKey = '';
     window.stopM4?.();
     delete content.dataset.m4Ready;
     delete content.dataset.pizzaReady;
@@ -74,8 +101,9 @@ async function draw() {
     document.querySelector('.mobile')?.classList.remove('m4-mode','pizza-mode');
 
     if (moment === 'm1') {
-      content.innerHTML = '<h2>Sugere uma música</h2><p id="music-vote-status" class="vote-cooldown" role="status" hidden></p><div class="track-search"><input id="q" autocomplete="off" placeholder="Pesquisa por música ou artista"><div id="suggestions" class="track-suggestions"></div><div id="results" class="track-results"></div></div><hr><h2>Mural de mensagens</h2><input id="name" placeholder="O teu nome"><textarea id="msg" placeholder="Escreve uma mensagem"></textarea><button id="send">ENVIAR PARA APROVAÇÃO</button>';
+      content.innerHTML = '<h2>Sugere uma música</h2><p id="music-vote-status" class="vote-cooldown" role="status" hidden></p><div class="track-search"><input id="q" autocomplete="off" placeholder="Pesquisa por música ou artista"><div id="suggestions" class="track-suggestions"></div><div id="results" class="track-results"></div></div><h2>Vota nas que já estão na lista</h2><div id="top-tracks" class="track-results"></div><hr><h2>Mural de mensagens</h2><input id="name" placeholder="O teu nome"><textarea id="msg" placeholder="Escreve uma mensagem"></textarea><button id="send">ENVIAR PARA APROVAÇÃO</button>';
       renderMusicStatus(d.voting);
+      renderTopTracks(d.tracks, d.voting);
       bindTrackSearch();
       bindMessage();
     } else if (moment === 'm2') {
@@ -98,11 +126,12 @@ async function draw() {
   }
 }
 
-function showTrackConfirm(track,onConfirm){
+function showTrackConfirm(track,onConfirm,kicker){
  let modal=document.querySelector('#track-confirm');
  if(!modal){
   modal=document.createElement('div');modal.id='track-confirm';modal.className='track-confirm';modal.innerHTML='<div class="track-confirm-card" role="dialog" aria-modal="true" aria-labelledby="track-confirm-title"><p class="track-confirm-kicker">CONFIRMAR SUGESTÃO</p><h3 id="track-confirm-title"></h3><p class="track-confirm-artist"></p><div class="track-confirm-actions"><button type="button" class="secondary" id="track-back">VOLTAR</button><button type="button" id="track-confirm-yes">CONFIRMAR</button></div></div>';document.body.appendChild(modal);
  }
+ modal.querySelector('.track-confirm-kicker').textContent=kicker||'CONFIRMAR SUGESTÃO';
  modal.querySelector('h3').textContent=track.title;
  modal.querySelector('.track-confirm-artist').textContent=track.artist;
  modal.classList.add('visible');

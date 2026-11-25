@@ -90,7 +90,7 @@ async function claimCooldown(env,eventId,key,scope){
 }
 function searchCooldownError(seconds){
  const mins=Math.max(1,Math.ceil(seconds/60));
- return new Response(JSON.stringify({error:"JÁ SUGERISTE UMA MÚSICA. PODES PESQUISAR DE NOVO EM "+mins+" MIN.",code:"SEARCH_COOLDOWN",retryAfterSeconds:seconds}),{status:429,headers:{"content-type":"application/json","cache-control":"no-store","retry-after":String(Math.max(1,seconds))}});
+ return new Response(JSON.stringify({error:"O TEU VOTO JÁ FOI REGISTADO. PODES PESQUISAR DE NOVO EM "+mins+" MIN.",code:"SEARCH_COOLDOWN",retryAfterSeconds:seconds}),{status:429,headers:{"content-type":"application/json","cache-control":"no-store","retry-after":String(Math.max(1,seconds))}});
 }
 function cooldownError(seconds){
  const mins=Math.max(1,Math.ceil(seconds/60));
