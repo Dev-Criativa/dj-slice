@@ -615,3 +615,26 @@ button.active{outline-color:var(--acid)}
 .mobile .block-aura{background:linear-gradient(180deg,rgba(208,46,76,.16),rgba(208,46,76,.06));border-color:rgba(208,46,76,.45)}
 .mobile .block-aura textarea,.mobile .block-aura input{background:rgba(10,9,8,.75)}
 .mobile #content:has(.guest-block){background:transparent;border:0;padding:0;box-shadow:none}
+
+/* Blocos do telemóvel mais diferenciados: cor de fundo, barra no topo, título e etiqueta próprios */
+.mobile .guest-block{position:relative;padding:22px 14px 16px;border-width:1px;border-top-width:5px}
+.mobile .guest-block::before{display:block;margin:0 0 6px;font:700 10px 'DM Mono';letter-spacing:.22em}
+.mobile .block-suggest{background:linear-gradient(180deg,rgba(240,201,120,.26),rgba(240,201,120,.08) 70%);border-color:rgba(240,201,120,.55);border-top-color:#f0c36e}
+.mobile .block-suggest::before{content:"01 · SUGERIR";color:#f0c36e}
+.mobile .block-suggest>h2{color:#f6d79a}
+.mobile .block-vote,.mobile .block-poll{background:#0d0c0b;border-color:#57514a;border-top-color:#e9e2d6}
+.mobile .block-vote::before{content:"02 · VOTAR";color:#e9e2d6}
+.mobile .block-poll::before{content:"STYLE WARS · VOTA";color:#e9e2d6}
+.mobile .block-vote .track-result{background:#25221f;border-color:#57514a}
+.mobile .block-aura{background:linear-gradient(180deg,rgba(208,46,76,.34),rgba(208,46,76,.10) 70%);border-color:rgba(208,46,76,.6);border-top-color:#d02e4c}
+.mobile .block-aura::before{content:"03 · AURA";color:#ff8fa3}
+.mobile .block-aura>h2{color:#ffb3c0}
+.mobile .block-poll+.block-aura::before{content:"AURA"}
+.mobile .block-aura #send{background:#d02e4c;color:#fff}
+/* Aura em verde WhatsApp (#25D366 / #128C7E / #075E54) */
+.mobile .block-aura{background:linear-gradient(180deg,rgba(37,211,102,.26),rgba(18,140,126,.10) 70%);border-color:rgba(37,211,102,.55);border-top-color:#25D366}
+.mobile .block-aura::before{color:#5ee08f}
+.mobile .block-aura>h2{color:#9cf0bb}
+.mobile .block-aura #send{background:#25D366;color:#06231a}
+.mobile .block-aura #send:disabled{background:#1b5e3d;color:#9cc7ae}
+.mobile .block-aura textarea,.mobile .block-aura input{background:rgba(6,20,14,.75);border-color:rgba(37,211,102,.35)}
