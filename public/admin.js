@@ -86,7 +86,9 @@ function showTab(tab) {
   } else {
     view.innerHTML = `<h2>${tab==='pending'?'Mensagens por aprovar':'Todas as mensagens'}</h2>
       <p>${tab==='pending'?'Aprova ou rejeita as mensagens antes de aparecerem na projecção.':'Edita, retira da projecção ou elimina definitivamente qualquer mensagem.'}</p>
-      <div id="messages">A carregar…</div>`;
+      <div id="messages">A carregar…</div>
+      <h2>Banidos</h2><p>Telemóveis banidos não podem enviar mensagens ("Farmaste tudo menos aura! Foste banid@!"). Votar e pesquisar continuam a funcionar.</p>
+      <div id="bans">A carregar…</div>`;
     loadMessages();
   }
 }
@@ -99,13 +101,14 @@ async function loadMessages() {
     const messages = activeTab === 'pending' ? (data.pending || []) : (data.messages || []);
     target.innerHTML = messages.map(message => `
       <article class="item message-item">
-        <div class="message-meta"><strong>${esc(message.guest_name)}</strong><small>${esc(message.status)}</small></div>
+        <div class="message-meta"><strong>${esc(message.guest_name)}</strong><small>${esc(message.status)}${message.banned ? ' · BANID@' : ''}</small></div>
         <p>${esc(message.body)}</p>
         <div class="message-actions">
           ${message.status !== 'published' ? `<button data-publish="${message.id}">APROVAR / PUBLICAR</button>` : `<button class="secondary" data-hide="${message.id}">RETIRAR DA PROJECÇÃO</button>`}
           <button class="secondary" data-edit="${message.id}">EDITAR</button>
           ${message.status === 'pending' ? `<button class="danger" data-reject="${message.id}">REJEITAR</button>` : ''}
           <button class="danger" data-delete="${message.id}">BIN / ELIMINAR</button>
+          ${message.canBan && !message.banned ? `<button class="danger" data-ban="${message.id}">BANIR</button>` : ''}
         </div>
       </article>`).join('') || 'Não existem mensagens nesta lista.';
     target.querySelectorAll('[data-publish]').forEach(button => button.onclick = () => updateMessage(button.dataset.publish,{status:'published'}));
@@ -113,6 +116,13 @@ async function loadMessages() {
     target.querySelectorAll('[data-reject]').forEach(button => button.onclick = () => updateMessage(button.dataset.reject,{status:'rejected'}));
     target.querySelectorAll('[data-edit]').forEach(button => button.onclick = () => editMessage(messages.find(item=>String(item.id)===button.dataset.edit)));
     target.querySelectorAll('[data-delete]').forEach(button => button.onclick = () => deleteMessage(button.dataset.delete));
+    target.querySelectorAll('[data-ban]').forEach(button => button.onclick = () => banAuthor(messages.find(item=>String(item.id)===button.dataset.ban)));
+    const bansBox = document.querySelector('#bans');
+    if (bansBox) {
+      const bans = data.bans || [];
+      bansBox.innerHTML = bans.length ? bans.map(b => `<article class="item message-item"><div class="message-meta"><strong>${esc(b.guest_name || 'Guest')}</strong><small>BANID@ · ${esc(b.created_at || '')}</small></div><div class="message-actions"><button class="secondary" data-unban="${esc(b.id)}">DESBANIR</button></div></article>`).join('') : 'Ninguém está banido.';
+      bansBox.querySelectorAll('[data-unban]').forEach(button => button.onclick = () => unban(button.dataset.unban));
+    }
   } catch (error) {
     const target = document.querySelector('#messages');
     if (target) target.textContent = error.message;
@@ -131,6 +141,18 @@ async function editMessage(message) {
   const body = prompt('Mensagem:',message.body);
   if (body === null) return;
   await updateMessage(message.id,{guest_name:name,body});
+}
+
+async function banAuthor(message) {
+  if (!message) return;
+  if (!confirm('Banir ' + (message.guest_name || 'este convidado') + '? O telemóvel deixa de poder enviar mensagens e as mensagens dele por aprovar ou publicadas são retiradas.')) return;
+  try { await a('message/' + message.id + '/ban', {method:'POST', body:'{}'}); await loadMessages(); }
+  catch (error) { alert(error.message); }
+}
+
+async function unban(id) {
+  try { await a('ban/' + encodeURIComponent(id), {method:'DELETE'}); await loadMessages(); }
+  catch (error) { alert(error.message); }
 }
 
 async function deleteMessage(id) {

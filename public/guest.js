@@ -101,7 +101,7 @@ async function draw() {
     if (moment === renderedMoment) {
       if (moment === 'm2') renderPoll(d.poll, d.voting);
       if (moment === 'm1') { renderMusicStatus(d.voting); renderTopTracks(d.tracks, d.voting); }
-      if (moment === 'm1' || moment === 'm2') renderAura(d.myMessage);
+      if (moment === 'm1' || moment === 'm2') renderAura(d.myMessage, d.banned);
       return;
     }
     renderedMoment = moment;
@@ -118,12 +118,12 @@ async function draw() {
       renderTopTracks(d.tracks, d.voting);
       bindTrackSearch();
       bindMessage();
-      renderAura(d.myMessage);
+      renderAura(d.myMessage, d.banned);
     } else if (moment === 'm2') {
       content.innerHTML = '<h2 id="poll-question">A carregar votação…</h2><div id="poll-options"></div><hr><h2>Farmador de Aura</h2><p id="aura-status" class="vote-cooldown" role="status" hidden></p><input id="name" placeholder="O teu nome"><textarea id="msg" placeholder="Escreve uma mensagem"></textarea><button id="send">ENVIAR PARA APROVAÇÃO</button>';
       renderPoll(d.poll, d.voting);
       bindMessage();
-      renderAura(d.myMessage);
+      renderAura(d.myMessage, d.banned);
     } else if (moment === 'm3') {
       content.classList.add('m3-content');
       document.querySelector('.mobile')?.classList.add('m3-mode');
@@ -206,18 +206,21 @@ const AURA_TEXT = {
   hidden: 'A TUA AURA FOI NEGADA. FARMA ALGO MELHOR.',
   published: 'A TUA AURA FOI FARMADA. TODOS VÃO SABER!!'
 };
-let auraNotice = '';
-function renderAura(myMessage) {
+let auraNotice = '', auraBanned = false;
+function renderAura(myMessage, banned) {
   const status = document.querySelector('#aura-status');
   if (!status) return;
   const st = myMessage?.status;
   if (st === 'deleted') { try { localStorage.removeItem(AURA_KEY); } catch {} }
-  const locked = st === 'pending';
-  const text = AURA_TEXT[st] || auraNotice;
+  if (banned !== undefined) auraBanned = !!banned;
+  const locked = st === 'pending' || auraBanned;
+  const text = auraBanned ? 'FARMASTE TUDO MENOS AURA! FOSTE BANID@!' : (AURA_TEXT[st] || auraNotice);
   status.textContent = text;
   status.hidden = !text;
   status.classList.toggle('aura-ok', st === 'published');
-  status.classList.toggle('aura-no', st === 'rejected' || st === 'hidden');
+  status.classList.toggle('aura-no', auraBanned || st === 'rejected' || st === 'hidden');
+  status.classList.toggle('aura-ban', auraBanned);
+  if (auraBanned) status.classList.remove('aura-ok');
   ['#name', '#msg', '#send'].forEach(sel => { const el = document.querySelector(sel); if (el) el.disabled = locked; });
 }
 function bindMessage() {
@@ -235,6 +238,7 @@ function bindMessage() {
       auraNotice = '';
       renderAura({id: r.id, status: 'pending'});
     } catch (error) {
+      if (error.code === 'BANNED') { renderAura(null, true); return; }
       auraNotice = String(error.message || 'NÃO FOI POSSÍVEL ENVIAR.').toUpperCase();
       renderAura(null);
       send.disabled = false;
