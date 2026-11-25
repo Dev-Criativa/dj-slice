@@ -60,7 +60,7 @@ function showTab(tab) {
       <button id="openRoom" class="secondary">ABRIR PROJECÇÃO ↗</button>
       <hr><h2>Momento activo</h2>
       <div class="moment-controls">
-        ${['m1','m2','m3','m4'].map((moment,i) => `<button data-m="${moment}">M${i+1} · ${['MÚSICA','SONG WARS','MIDNIGHT SLICE','LIGHTS'][i]}</button>`).join('')}
+        ${['m1','m2','m3','m4'].map((moment,i) => `<button data-m="${moment}">M${i+1} · ${['MÚSICA','STYLE WARS','MIDNIGHT SLICE','LIGHTS'][i]}</button>`).join('')}
       </div>
       <hr><h2>Configurar votação</h2>
       <input id="question" value="Que género ganha esta noite?">
