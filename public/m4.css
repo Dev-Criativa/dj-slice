@@ -102,3 +102,19 @@ body:has(.mobile.m4-mode){position:fixed;inset:0;min-height:0;width:100%;height:
 }
 
 .mobile.m4-mode #content.m4-content{grid-template-rows:auto minmax(0,1fr) auto auto auto!important}
+
+/* Ajuste para todos os telemóveis: o título ocupa duas linhas e nunca alarga o ecrã.
+   Antes, as duas linhas ficavam numa só (nowrap a 25vw) e a grelha alargava para lá do ecrã. */
+.mobile.m4-mode #content.m4-content{grid-template-columns:minmax(0,1fr)!important;width:100%;max-width:100%}
+.mobile.m4-mode #content.m4-content>*{min-width:0;max-width:100%}
+.mobile.m4-mode #content.m4-content .m4-headline{
+ font-size:min(19vw,11.5svh,130px)!important;line-height:.82!important;
+ white-space:normal;overflow:hidden;padding-right:.08em;
+}
+.mobile.m4-mode #content.m4-content .m4-headline span{display:block;white-space:nowrap}
+.mobile.m4-mode #content.m4-content .m4-instruction,
+.mobile.m4-mode #content.m4-content .m4-status{overflow-wrap:anywhere}
+.mobile.m4-mode #content.m4-content .m4-torch-button{flex-wrap:wrap;text-align:center}
+@media(max-height:760px){
+ .mobile.m4-mode #content.m4-content .m4-headline{font-size:min(19vw,10.5svh,118px)!important}
+}
