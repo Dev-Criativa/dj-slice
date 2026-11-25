@@ -27,6 +27,7 @@ function panel() {
       <button class="secondary" data-tab="control">CONTROLO</button>
       <button class="secondary" data-tab="pending">POR APROVAR</button>
       <button class="secondary" data-tab="all">GESTÃO DE MENSAGENS</button>
+      <button class="secondary" data-tab="windows">ABRIR JANELAS</button>
     </nav>
     <section id="admin-view"></section>
     <hr><button id="logout" class="secondary">TERMINAR SESSÃO</button>
@@ -52,13 +53,42 @@ function showTab(tab) {
   activeTab = tab;
   root.querySelectorAll('[data-tab]').forEach(button => button.classList.toggle('active',button.dataset.tab===tab));
   const view = document.querySelector('#admin-view');
-  if (tab === 'control') {
+  if (tab === 'windows') {
     view.innerHTML = `
-      <h2>Ecrãs</h2>
-      <p>Abre cada ecrã numa janela independente. Arrasta o Room Display para o projector.</p>
-      <button id="openQR" class="secondary">ABRIR ECRÃ QR ↗</button>
-      <button id="openRoom" class="secondary">ABRIR PROJECÇÃO ↗</button>
-      <hr><h2>Momento activo</h2>
+      <h2>Abrir janelas</h2>
+      <p>Cada ecrã abre numa janela própria. Carregar de novo traz a mesma janela para a frente.</p>
+      <div class="window-list">
+        <article class="item window-item">
+          <div><strong>PROJECTOR</strong><p>Ecrã da sala. Arrasta a janela para o projector e põe em ecrã inteiro.</p></div>
+          <button data-open="room">ABRIR ↗</button>
+        </article>
+        <article class="item window-item">
+          <div><strong>PARTY PEOPLE</strong><p>Pré-visualização do ecrã do público, em tamanho de telemóvel. Só leitura: nada do que fizeres aqui conta.</p></div>
+          <button data-open="guest">ABRIR ↗</button>
+        </article>
+        <article class="item window-item">
+          <div><strong>ECRÃ QR</strong><p>QR de entrada na festa, para um ecrã à porta.</p></div>
+          <button class="secondary" data-open="qr">ABRIR ↗</button>
+        </article>
+        <article class="item window-item is-soon">
+          <div><strong>DJ</strong><p>Ecrã do DJ. Em breve.</p></div>
+          <button class="secondary" disabled>EM BREVE</button>
+        </article>
+      </div>`;
+    const ev = encodeURIComponent(CODE);
+    const targets = {
+      room: ['/room?event=' + ev, 'dj-slice-room', ''],
+      guest: ['/guest?event=' + ev + '&preview=1', 'dj-slice-guest-preview', 'popup,width=400,height=860'],
+      qr: ['/qr?event=' + ev, 'dj-slice-qr', '']
+    };
+    view.querySelectorAll('[data-open]').forEach(button => button.onclick = () => {
+      const [url, name, features] = targets[button.dataset.open];
+      const w = window.open(url, name, features);
+      if (w) w.focus(); else alert('O browser bloqueou a janela. Permite pop-ups para este site.');
+    });
+  } else if (tab === 'control') {
+    view.innerHTML = `
+      <h2>Momento activo</h2>
       <div class="moment-controls">
         ${['m1','m2','m3','m4','m5'].map((moment,i) => `<button data-m="${moment}">M${i+1} · ${['MÚSICA','STYLE WARS','MIDNIGHT SLICE','LIGHTS','PIZZA'][i]}</button>`).join('')}
       </div>
@@ -66,8 +96,6 @@ function showTab(tab) {
       <input id="question" value="Que género ganha esta noite?">
       <input id="o1" value="HOUSE"><input id="o2" value="AFROBEATS"><input id="o3" value="TECHNO">
       <button id="save">GUARDAR VOTAÇÃO</button>`;
-    document.querySelector('#openQR').onclick = () => window.open('/qr?event='+encodeURIComponent(CODE),'dj-slice-qr');
-    document.querySelector('#openRoom').onclick = () => window.open('/room?event='+encodeURIComponent(CODE),'dj-slice-room');
     view.querySelectorAll('[data-m]').forEach(button => button.onclick = async () => {
       try {
         await a('moment',{method:'POST',body:JSON.stringify({moment:button.dataset.m})});

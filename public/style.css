@@ -488,3 +488,12 @@ button.active{outline-color:var(--acid)}
 
 /* Ecrã QR: o qrcodejs gera <canvas> e <img> com o mesmo código; mostra só a imagem (igual ao projector). */
 .qr-screen .qr-box canvas{display:none!important}
+
+/* Admin · Abrir janelas */
+.window-list{display:grid;gap:12px}
+.window-item{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.window-item p{margin:6px 0 0;color:var(--muted)}
+.window-item button{margin:0;flex:none}
+.window-item.is-soon{opacity:.55}
+/* Guest em pré-visualização (aberto pelo admin) */
+.preview-banner{position:sticky;top:0;z-index:20000;padding:8px 12px;text-align:center;background:#f0c36e;color:#171513;font:700 11px 'DM Mono';letter-spacing:.14em}
