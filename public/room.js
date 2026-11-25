@@ -64,6 +64,9 @@ async function draw(){
     const qr=el('join-qr');
     qr.classList.toggle('visible',moment==='m1'||moment==='m2');
     setupProjectorQR();
+    // M5 = QR grande de entrada
+    const big=el('big-qr');if(big){big.hidden=moment!=='m5';if(moment==='m5'&&!big.childElementCount&&window.QRCode)new QRCode(big,{text:guestUrl.href,width:720,height:720,colorDark:'#111111',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M});}
+    document.querySelector('.room-screen').classList.toggle('moment-qr',moment==='m5');
     document.querySelector('.room-screen').classList.toggle('moment-call',moment==='m3'||moment==='m4'||moment==='m5'||!moment);
     el('event-brand').textContent='PEDE & FATIA';
     document.title='PEDE & FATIA — Projecção';
@@ -90,8 +93,8 @@ async function draw(){
       el('headline').innerHTML='TURN ON<br><em>THE LIGHTS.</em>';
       el('body').textContent='LIGA A LANTERNA DO TEU TELEMÓVEL.';
     }else if(moment==='m5'){
-      el('headline').innerHTML='GRAB A<br><em>PIZZA SLICE!</em>';
-      el('body').textContent='TROCA UMA FICHA POR UMA FATIA.';
+      el('headline').innerHTML='ENTRA NA<br><em>FESTA.</em>';
+      el('body').textContent='APONTA A CÂMARA E PARTICIPA.';
     }else{
       el('headline').innerHTML='PEDE<br><em>&amp; FATIA</em>';
       el('body').textContent='A AGUARDAR O PRÓXIMO MOMENTO.';

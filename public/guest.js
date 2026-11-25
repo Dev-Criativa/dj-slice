@@ -112,7 +112,7 @@ async function draw() {
     window.stopM4?.();
     delete content.dataset.m4Ready;
     delete content.dataset.pizzaReady;
-    content.classList.remove('m3-content','m4-content','pizza-content');
+    content.classList.remove('m3-content','m4-content','m5-content','pizza-content');
     document.querySelector('.mobile')?.classList.remove('m3-mode','m4-mode','pizza-mode');
 
     if (moment === 'm1') {
@@ -146,7 +146,14 @@ async function draw() {
       content.innerHTML = '<div class="device-call" data-m4-trigger><h2>TURN ON<br><em>THE LIGHTS.</em></h2><p>LIGA A LANTERNA DO TEU TELEMÓVEL.</p></div>';
       window.renderM4?.();
     } else if (moment === 'm5') {
-      window.renderPizza?.();
+      // M5 = QR de entrada: o convidado mostra o QR a quem ainda não entrou.
+      content.classList.add('m3-content', 'm5-content');
+      document.querySelector('.mobile')?.classList.add('m3-mode');
+      const invite = new URL('/guest', location.origin); invite.searchParams.set('event', CODE);
+      content.innerHTML = '<h2 class="m3-headline"><span>ENTRA NA</span><span>FESTA.</span></h2>'
+        + '<div class="m3-visual m5-qr-wrap"><div class="m5-qr" id="m5-qr" role="img" aria-label="Código QR para entrar na festa"></div></div>'
+        + '<p class="m3-instruction">MOSTRA ESTE QR A QUEM<br>QUISER ENTRAR E VOTAR.</p>';
+      if (window.QRCode) new QRCode(document.querySelector('#m5-qr'), {text: invite.href, width: 512, height: 512, colorDark: '#111111', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M});
     } else {
       content.innerHTML = '<div class="device-call"><p>A AGUARDAR O PRÓXIMO MOMENTO.</p></div>';
     }

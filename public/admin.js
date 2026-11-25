@@ -1,201 +1,432 @@
+// PEDE & FATIA — Party Controller (admin)
+// Menu: Party Controller · Mensagens (Por aprovar, Gestão, Devices) · Abrir janelas (Projector, Party People, QR Invite, DJ Controller)
 const root = document.querySelector('#root');
+const navEl = document.querySelector('#adm-nav');
+const subEl = document.querySelector('#adm-subnav');
 let token = sessionStorage.getItem('ee-admin');
-let moderationTimer = null;
-let activeTab = 'control';
+let route = {section: 'party', sub: ''};
+let refreshTimer = null;
+let live = {moment: '', pending: 0};
 
-function openScreen(key) {
-  const ev = encodeURIComponent(CODE);
-  const targets = {
-    room: ['/room?event=' + ev, 'dj-slice-room', ''],
-    guest: ['/guest?event=' + ev + '&preview=1', 'dj-slice-guest-preview', 'popup,width=400,height=860'],
-    qr: ['/qr?event=' + ev, 'dj-slice-qr', ''],
-    dj: ['/dj?event=' + ev, 'dj-slice-dj', '']
-  };
-  const [url, name, features] = targets[key];
-  const w = window.open(url, name, features);
-  if (w) w.focus(); else alert('O browser bloqueou a janela. Permite pop-ups para este site.');
-}
+const MOMENTS = [
+  ['m1', 'MÚSICA', 'Sugestões TIDAL, votos e Farmador de Aura'],
+  ['m2', 'STYLE WARS', 'Votação de estilos e Farmador de Aura'],
+  ['m3', 'MIDNIGHT SLICE', 'A pizza está servida'],
+  ['m4', 'LIGHTS', 'Lanternas dos telemóveis acesas'],
+  ['m5', 'QR CODE', 'QR de entrada no projector e nos telemóveis']
+];
+const MENU = [
+  {id: 'party', label: 'PARTY CONTROLLER'},
+  {id: 'messages', label: 'MENSAGENS', subs: [['pending', 'POR APROVAR'], ['manage', 'GESTÃO'], ['devices', 'DEVICES']]},
+  {id: 'windows', label: 'ABRIR JANELAS', subs: [['projector', 'PROJECTOR'], ['people', 'PARTY PEOPLE'], ['qr', 'QR INVITE'], ['dj', 'DJ CONTROLLER']]}
+];
 
 async function a(path, opt = {}) {
-  return api(path, {...opt, headers:{...(opt.headers || {}), authorization:'Bearer ' + token}});
+  return api(path, {...opt, headers: {...(opt.headers || {}), authorization: 'Bearer ' + token}});
+}
+const $ = sel => document.querySelector(sel);
+const fmtTime = s => s ? String(s).replace('T', ' ').slice(11, 16) : '';
+const shortId = id => String(id || '').replace(/[^a-z0-9]/gi, '').slice(0, 6).toUpperCase();
+function toast(text, kind = '') {
+  let t = $('#adm-toast');
+  if (!t) { t = document.createElement('div'); t.id = 'adm-toast'; document.body.appendChild(t); }
+  t.className = 'adm-toast show ' + kind; t.textContent = text;
+  clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 2600);
 }
 
+// ---------- login ----------
 async function login() {
-  const response = await fetch('/api/login', {
-    method:'POST',
-    headers:{'content-type':'application/json'},
-    body:JSON.stringify({pin:document.querySelector('#pin').value})
-  });
-  const data = await response.json();
-  if (!response.ok || !data.token) return alert(data.error || 'Autenticação não configurada.');
-  token = data.token;
-  sessionStorage.setItem('ee-admin', token);
-  panel();
+  const err = $('#login-error'); err.textContent = '';
+  try {
+    const r = await fetch('/api/login', {method: 'POST', headers: {'content-type': 'application/json'}, body: JSON.stringify({pin: $('#pin').value})});
+    const d = await r.json();
+    if (!r.ok || !d.token) throw new Error(d.error || 'Autenticação não configurada.');
+    token = d.token; sessionStorage.setItem('ee-admin', token); start();
+  } catch (e) { err.textContent = e.message; }
 }
-document.querySelector('#login')?.addEventListener('click', login);
+$('#login').onclick = login;
+$('#pin').addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
+$('#logout').onclick = () => { sessionStorage.removeItem('ee-admin'); token = null; location.hash = ''; location.reload(); };
 
-function panel() {
-  root.innerHTML = `
-    <nav class="admin-tabs">
-      <button class="secondary" data-tab="control">CONTROLO</button>
-      <button class="secondary" data-tab="pending">POR APROVAR</button>
-      <button class="secondary" data-tab="all">GESTÃO DE MENSAGENS</button>
-      <button class="secondary" data-tab="windows">ABRIR JANELAS</button>
-    </nav>
-    <section id="admin-view"></section>
-    <hr><button id="logout" class="secondary">TERMINAR SESSÃO</button>
-  `;
-  root.querySelectorAll('[data-tab]').forEach(button => {
-    button.onclick = () => showTab(button.dataset.tab);
-  });
-  document.querySelector('#logout').onclick = () => {
-    sessionStorage.removeItem('ee-admin');
-    token = null;
-    if (moderationTimer) clearInterval(moderationTimer);
-    root.innerHTML = '<label>PIN DE ADMINISTRAÇÃO</label><input id="pin" type="password" autocomplete="current-password"><button id="login">ENTRAR</button>';
-    document.querySelector('#login').onclick = login;
-  };
-  showTab(activeTab);
-  if (moderationTimer) clearInterval(moderationTimer);
-  moderationTimer = setInterval(() => {
-    if (activeTab === 'pending' || activeTab === 'all') loadMessages();
+// ---------- navegação ----------
+function readHash() {
+  const [section, sub] = location.hash.replace('#', '').split('/');
+  const m = MENU.find(x => x.id === section) || MENU[0];
+  route = {section: m.id, sub: m.subs ? (m.subs.find(s => s[0] === sub) ? sub : m.subs[0][0]) : ''};
+}
+function go(section, sub) { location.hash = section + (sub ? '/' + sub : ''); }
+window.addEventListener('hashchange', () => { if (token) { readHash(); render(); } });
+
+function renderNav() {
+  navEl.hidden = false;
+  navEl.innerHTML = MENU.map(m => `<button class="adm-tab${route.section === m.id ? ' active' : ''}" data-section="${m.id}">${m.label}${m.id === 'messages' && live.pending ? `<span class="adm-badge">${live.pending}</span>` : ''}</button>`).join('');
+  navEl.querySelectorAll('[data-section]').forEach(b => b.onclick = () => go(b.dataset.section));
+  const m = MENU.find(x => x.id === route.section);
+  subEl.hidden = !m.subs;
+  subEl.innerHTML = m.subs ? m.subs.map(([id, label]) => `<button class="adm-subtab${route.sub === id ? ' active' : ''}" data-sub="${id}">${label}${id === 'pending' && live.pending ? `<span class="adm-badge">${live.pending}</span>` : ''}</button>`).join('') : '';
+  subEl.querySelectorAll('[data-sub]').forEach(b => b.onclick = () => go(route.section, b.dataset.sub));
+}
+
+function start() {
+  $('#logout').hidden = false;
+  readHash();
+  render();
+  refreshLive();
+  clearInterval(refreshTimer);
+  refreshTimer = setInterval(async () => {
+    refreshLive();
+    if (route.section === 'messages' && !document.querySelector('.adm-editing')) render(true);
+    if (route.section === 'party') { try { const st = await api('state'); renderPollLive(st); markMoment(st.event.activeMoment); renderStats(st); } catch {} }
   }, 5000);
 }
 
-function showTab(tab) {
-  activeTab = tab;
-  root.querySelectorAll('[data-tab]').forEach(button => button.classList.toggle('active',button.dataset.tab===tab));
-  const view = document.querySelector('#admin-view');
-  if (tab === 'windows') {
-    view.innerHTML = `
-      <h2>Abrir janelas</h2>
-      <p>Cada ecrã abre numa janela própria. Carregar de novo traz a mesma janela para a frente.</p>
-      <div class="window-list">
-        <article class="item window-item">
-          <div><strong>PROJECTOR</strong><p>Ecrã da sala. Arrasta a janela para o projector e põe em ecrã inteiro.</p></div>
-          <button data-open="room">ABRIR ↗</button>
-        </article>
-        <article class="item window-item">
-          <div><strong>PARTY PEOPLE</strong><p>Pré-visualização do ecrã do público, em tamanho de telemóvel. Só leitura: nada do que fizeres aqui conta.</p></div>
-          <button data-open="guest">ABRIR ↗</button>
-        </article>
-        <article class="item window-item">
-          <div><strong>ECRÃ QR</strong><p>QR de entrada na festa, para um ecrã à porta.</p></div>
-          <button class="secondary" data-open="qr">ABRIR ↗</button>
-        </article>
-        <article class="item window-item">
-          <div><strong>DJ</strong><p>Top 15 mais votadas: o DJ marca "A tocar" (aparece no projector) e tira as que já tocaram. Entra com o PIN do DJ.</p></div>
-          <button data-open="dj">ABRIR ↗</button>
-        </article>
-      </div>`;
-    view.querySelectorAll('[data-open]').forEach(button => button.onclick = () => openScreen(button.dataset.open));
-  } else if (tab === 'control') {
-    view.innerHTML = `
-      <div class="screen-shortcuts">
-        <button class="secondary" data-open="qr">ABRIR ECRÃ QR ↗</button>
-        <button class="secondary" data-open="room">ABRIR PROJECÇÃO ↗</button>
-        <button class="secondary" data-open="dj">ABRIR DJ ↗</button>
-      </div>
-      <hr><h2>Momento activo</h2>
-      <div class="moment-controls">
-        ${['m1','m2','m3','m4','m5'].map((moment,i) => `<button data-m="${moment}">M${i+1} · ${['MÚSICA','STYLE WARS','MIDNIGHT SLICE','LIGHTS','PIZZA'][i]}</button>`).join('')}
-      </div>
-      <hr><h2>Configurar votação</h2>
-      <input id="question" value="Que género ganha esta noite?">
-      <input id="o1" value="HOUSE"><input id="o2" value="AFROBEATS"><input id="o3" value="TECHNO">
-      <button id="save">GUARDAR VOTAÇÃO</button>`;
-    view.querySelectorAll('[data-open]').forEach(button => button.onclick = () => openScreen(button.dataset.open));
-    view.querySelectorAll('[data-m]').forEach(button => button.onclick = async () => {
-      try {
-        await a('moment',{method:'POST',body:JSON.stringify({moment:button.dataset.m})});
-        view.querySelectorAll('[data-m]').forEach(item => item.classList.toggle('active',item===button));
-      } catch (error) { alert(error.message); }
-    });
-    document.querySelector('#save').onclick = async () => {
-      try {
-        await a('poll',{method:'POST',body:JSON.stringify({
-          question:document.querySelector('#question').value,
-          options:['o1','o2','o3'].map(id=>document.querySelector('#'+id).value)
-        })});
-        alert('Votação guardada e activada.');
-      } catch (error) { alert(error.message); }
-    };
-  } else {
-    view.innerHTML = `<h2>${tab==='pending'?'Mensagens por aprovar':'Todas as mensagens'}</h2>
-      <p>${tab==='pending'?'Aprova ou rejeita as mensagens antes de aparecerem na projecção.':'Edita, retira da projecção ou elimina definitivamente qualquer mensagem.'}</p>
-      <div id="messages">A carregar…</div>
-      <h2>Banidos</h2><p>Telemóveis banidos não podem enviar mensagens ("Farmaste tudo menos aura! Foste banid@!"). Votar e pesquisar continuam a funcionar.</p>
-      <div id="bans">A carregar…</div>`;
-    loadMessages();
-  }
-}
-
-async function loadMessages() {
+async function refreshLive() {
   try {
-    const data = await a('admin');
-    const target = document.querySelector('#messages');
-    if (!target) return;
-    const messages = activeTab === 'pending' ? (data.pending || []) : (data.messages || []);
-    target.innerHTML = messages.map(message => `
-      <article class="item message-item">
-        <div class="message-meta"><strong>${esc(message.guest_name)}</strong><small>${esc(message.status)}${message.banned ? ' · BANID@' : ''}</small></div>
-        <p>${esc(message.body)}</p>
-        <div class="message-actions">
-          ${message.status !== 'published' ? `<button data-publish="${message.id}">APROVAR / PUBLICAR</button>` : `<button class="secondary" data-hide="${message.id}">RETIRAR DA PROJECÇÃO</button>`}
-          <button class="secondary" data-edit="${message.id}">EDITAR</button>
-          ${message.status === 'pending' ? `<button class="danger" data-reject="${message.id}">REJEITAR</button>` : ''}
-          <button class="danger" data-delete="${message.id}">BIN / ELIMINAR</button>
-          ${message.canBan && !message.banned ? `<button class="danger" data-ban="${message.id}">BANIR</button>` : ''}
+    const [st, adm] = await Promise.all([api('state'), a('admin')]);
+    live.moment = st.event.activeMoment; live.pending = (adm.pending || []).length;
+    const m = MOMENTS.find(x => x[0] === live.moment);
+    $('#adm-live').hidden = false;
+    $('#adm-live-text').textContent = 'NO AR · ' + String(live.moment).toUpperCase() + (m ? ' · ' + m[1] : '');
+    renderNav();
+  } catch (e) { if (e.status === 401) { sessionStorage.removeItem('ee-admin'); location.reload(); } }
+}
+
+function render(quiet) {
+  renderNav();
+  const s = route.section, sub = route.sub;
+  if (s === 'party') return renderParty();
+  if (s === 'messages') return sub === 'devices' ? renderDevices() : renderMessages(sub, quiet);
+  if (s === 'windows') return ({projector: renderProjector, people: renderPeople, qr: renderQr, dj: renderDj})[sub]();
+}
+
+// ---------- Party Controller ----------
+async function renderParty() {
+  root.innerHTML = `
+    <div class="adm-grid">
+      <section class="adm-card adm-span">
+        <header class="adm-card-head"><h2>Momento activo</h2><small>Toca num momento para o pôr no ar em todos os ecrãs.</small></header>
+        <div class="adm-moments">${MOMENTS.map(([id, name, desc], i) => `<button class="adm-moment" data-m="${id}"><b>M${i + 1}</b><strong>${name}</strong><span>${desc}</span><em>NO AR</em></button>`).join('')}</div>
+      </section>
+      <section class="adm-card adm-span adm-poll">
+        <header class="adm-card-head"><h2>Style Wars</h2><small>Votação do M2. Os resultados actualizam sozinhos.</small></header>
+        <div class="adm-poll-grid">
+          <div class="adm-poll-edit">
+            <div class="adm-block">
+              <span class="adm-block-tag">1 · PERGUNTA</span>
+              <textarea id="question" rows="2" maxlength="180">Que género ganha esta noite?</textarea>
+            </div>
+            <div class="adm-block">
+              <span class="adm-block-tag">2 · OPÇÕES <em>(2 a 5)</em></span>
+              <div id="poll-options" class="adm-options"></div>
+              <button class="adm-ghost adm-add" id="opt-add">+ ADICIONAR OPÇÃO</button>
+            </div>
+            <div class="adm-row"><button id="save">GUARDAR E ACTIVAR</button></div>
+            <p class="adm-muted adm-small">Guardar cria uma votação nova: os votos recomeçam do zero.</p>
+          </div>
+          <div class="adm-poll-live">
+            <div class="adm-live-head"><span class="adm-dot"></span><b>RESULTADOS AO VIVO</b><small id="poll-total"></small></div>
+            <p id="poll-live-q" class="adm-poll-q"></p>
+            <div id="poll-results" class="adm-results"><p class="adm-muted">A carregar…</p></div>
+          </div>
         </div>
-      </article>`).join('') || 'Não existem mensagens nesta lista.';
-    target.querySelectorAll('[data-publish]').forEach(button => button.onclick = () => updateMessage(button.dataset.publish,{status:'published'}));
-    target.querySelectorAll('[data-hide]').forEach(button => button.onclick = () => updateMessage(button.dataset.hide,{status:'hidden'}));
-    target.querySelectorAll('[data-reject]').forEach(button => button.onclick = () => updateMessage(button.dataset.reject,{status:'rejected'}));
-    target.querySelectorAll('[data-edit]').forEach(button => button.onclick = () => editMessage(messages.find(item=>String(item.id)===button.dataset.edit)));
-    target.querySelectorAll('[data-delete]').forEach(button => button.onclick = () => deleteMessage(button.dataset.delete));
-    target.querySelectorAll('[data-ban]').forEach(button => button.onclick = () => banAuthor(messages.find(item=>String(item.id)===button.dataset.ban)));
-    const bansBox = document.querySelector('#bans');
-    if (bansBox) {
-      const bans = data.bans || [];
-      bansBox.innerHTML = bans.length ? bans.map(b => `<article class="item message-item"><div class="message-meta"><strong>${esc(b.guest_name || 'Guest')}</strong><small>BANID@ · ${esc(b.created_at || '')}</small></div><div class="message-actions"><button class="secondary" data-unban="${esc(b.id)}">DESBANIR</button></div></article>`).join('') : 'Ninguém está banido.';
-      bansBox.querySelectorAll('[data-unban]').forEach(button => button.onclick = () => unban(button.dataset.unban));
-    }
-  } catch (error) {
-    const target = document.querySelector('#messages');
-    if (target) target.textContent = error.message;
-  }
+      </section>
+      <section class="adm-card">
+        <header class="adm-card-head"><h2>Ao vivo</h2><small id="adm-stats-time"></small></header>
+        <div class="adm-stats" id="adm-stats"><p class="adm-muted">A carregar…</p></div>
+      </section>
+      <section class="adm-card">
+        <header class="adm-card-head"><h2>Abrir ecrãs</h2><small>Cada ecrã abre na sua janela; carregar de novo traz a mesma janela para a frente.</small></header>
+        <div class="adm-row screen-shortcuts">
+          <button class="adm-ghost" data-open="room">PROJECTOR ↗</button>
+          <button class="adm-ghost" data-open="dj">DJ CONTROLLER ↗</button>
+          <button class="adm-ghost" data-open="qr">ECRÃ QR ↗</button>
+          <button class="adm-ghost" data-open="guest">PARTY PEOPLE ↗</button>
+        </div>
+      </section>
+    </div>`;
+  bindOpen(root);
+  const opts = $('#poll-options');
+  const renumber = () => { [...opts.children].forEach((row, i) => { row.querySelector('b').textContent = i + 1; row.querySelector('input').placeholder = 'Opção ' + (i + 1); }); $('#opt-add').hidden = opts.children.length >= 5; };
+  const addOpt = (v = '') => {
+    if (opts.children.length >= 5) return;
+    const row = document.createElement('div'); row.className = 'adm-opt';
+    row.innerHTML = '<b></b><input maxlength="80"><button class="adm-ghost adm-x" title="Remover opção" aria-label="Remover opção">×</button>';
+    row.querySelector('input').value = v;
+    row.querySelector('button').onclick = () => { if (opts.children.length > 2) { row.remove(); renumber(); } else toast('A votação precisa de pelo menos 2 opções.', 'err'); };
+    opts.appendChild(row); renumber();
+  };
+  try {
+    const st = await api('state');
+    markMoment(st.event.activeMoment);
+    if (st.poll) { $('#question').value = st.poll.question || ''; (st.poll.options || []).forEach(o => addOpt(o.label)); }
+    renderStats(st); renderPollLive(st);
+  } catch {}
+  if (!opts.children.length) ['HOUSE', 'AFROBEATS', 'TECHNO'].forEach(addOpt);
+  $('#opt-add').onclick = () => addOpt();
+  root.querySelectorAll('[data-m]').forEach(b => b.onclick = async () => {
+    try { await a('moment', {method: 'POST', body: JSON.stringify({moment: b.dataset.m})}); markMoment(b.dataset.m); live.moment = b.dataset.m; refreshLive(); toast('No ar: ' + b.dataset.m.toUpperCase(), 'ok'); }
+    catch (e) { toast(e.message, 'err'); }
+  });
+  $('#save').onclick = async () => {
+    const options = [...opts.querySelectorAll('input')].map(i => i.value.trim()).filter(Boolean);
+    if (options.length < 2) return toast('Preenche pelo menos 2 opções.', 'err');
+    const votes = Number($('#poll-results')?.dataset.total || 0);
+    if (votes > 0 && !confirm('A votação actual tem ' + votes + (votes === 1 ? ' voto' : ' votos') + '. Guardar cria uma votação nova e os votos recomeçam do zero. Continuar?')) return;
+    try {
+      await a('poll', {method: 'POST', body: JSON.stringify({question: $('#question').value, options})});
+      toast('Style Wars guardado e activado.', 'ok');
+      renderPollLive(await api('state'));
+    } catch (e) { toast(e.message, 'err'); }
+  };
+}
+function renderPollLive(st) {
+  const box = $('#poll-results'); if (!box) return;
+  const poll = st.poll, options = poll ? [...(poll.options || [])] : [];
+  const total = options.reduce((n, o) => n + (Number(o.votes) || 0), 0);
+  const max = Math.max(1, ...options.map(o => Number(o.votes) || 0));
+  box.dataset.total = total;
+  $('#poll-live-q').textContent = poll ? poll.question : 'Ainda não há votação configurada.';
+  $('#poll-total').textContent = total + (total === 1 ? ' voto' : ' votos') + (st.event.activeMoment === 'm2' ? ' · M2 NO AR' : ' · M2 fora do ar');
+  box.innerHTML = options.length ? options.map((o, i) => {
+    const v = Number(o.votes) || 0, pct = total ? Math.round(v / total * 100) : 0, lead = v === max && v > 0;
+    return `<div class="adm-result${lead ? ' lead' : ''}"><div class="adm-result-line"><span><b>${i + 1}</b>${esc(o.label)}</span><strong>${pct}%</strong><small>${v} ${v === 1 ? 'voto' : 'votos'}</small></div><div class="adm-bar"><i style="width:${total ? Math.round(v / max * 100) : 0}%"></i></div></div>`;
+  }).join('') : '<p class="adm-empty">Guarda uma votação para começar.</p>';
+}
+function markMoment(m) { root.querySelectorAll('[data-m]').forEach(b => b.classList.toggle('active', b.dataset.m === m)); }
+async function renderStats(st) {
+  let adm = {pending: [], messages: []}, dev = {devices: []};
+  try { [adm, dev] = await Promise.all([a('admin'), a('devices')]); } catch {}
+  const box = $('#adm-stats'); if (!box) return;
+  const published = (adm.messages || []).filter(m => m.status === 'published').length;
+  const banned = (dev.devices || []).filter(d => d.banned).length;
+  const votes = (st.tracks || []).reduce((n, t) => n + (Number(t.votes) || 0), 0);
+  box.innerHTML = [
+    ['A TOCAR', st.nowPlaying ? st.nowPlaying.title : '—', 'wide'],
+    ['MÚSICAS NA LISTA', (st.tracks || []).length], ['VOTOS EM MÚSICAS', votes],
+    ['MENSAGENS POR APROVAR', (adm.pending || []).length, (adm.pending || []).length ? 'hot' : ''],
+    ['AURAS PUBLICADAS', published], ['DEVICES BANIDOS', banned]
+  ].map(([k, v, cls]) => `<div class="adm-stat ${cls || ''}"><small>${k}</small><strong>${esc(String(v))}</strong></div>`).join('');
+  const t = $('#adm-stats-time'); if (t) t.textContent = 'actualizado ' + new Date().toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'});
 }
 
-async function updateMessage(id, changes) {
-  try { await a('message/'+id,{method:'PATCH',body:JSON.stringify(changes)}); await loadMessages(); }
-  catch (error) { alert(error.message); }
+// ---------- Mensagens ----------
+let manageFilter = 'all';
+async function renderMessages(sub, quiet) {
+  if (!quiet) root.innerHTML = `<section class="adm-card adm-span"><p class="adm-muted">A carregar…</p></section>`;
+  let data;
+  try { data = await a('admin'); } catch (e) { root.innerHTML = `<section class="adm-card"><p class="adm-error">${esc(e.message)}</p></section>`; return; }
+  live.pending = (data.pending || []).length; renderNav();
+  const pending = sub === 'pending';
+  let list = pending ? (data.pending || []) : (data.messages || []);
+  if (!pending && manageFilter !== 'all') list = list.filter(m => manageFilter === 'removed' ? (m.status === 'rejected' || m.status === 'hidden') : m.status === manageFilter);
+  const filters = pending ? '' : `<div class="adm-chips">${[['all', 'TODAS'], ['published', 'PUBLICADAS'], ['pending', 'POR APROVAR'], ['removed', 'REJEITADAS / RETIRADAS']].map(([id, l]) => `<button class="adm-chip${manageFilter === id ? ' active' : ''}" data-filter="${id}">${l}</button>`).join('')}</div>`;
+  root.innerHTML = `
+    <section class="adm-card adm-span">
+      <header class="adm-card-head"><h2>${pending ? 'Por aprovar' : 'Gestão de mensagens'}</h2>
+        <small>${pending ? 'Aprova ou rejeita antes de aparecerem no projector. Actualiza sozinho.' : 'Publica, retira, edita, elimina ou bane o telemóvel que enviou.'}</small></header>
+      ${filters}
+      <div class="adm-list" id="messages">${list.map(messageItem).join('') || `<p class="adm-empty">${pending ? 'Nada por aprovar. 🎉' : 'Não há mensagens nesta lista.'}</p>`}</div>
+    </section>`;
+  root.querySelectorAll('[data-filter]').forEach(b => b.onclick = () => { manageFilter = b.dataset.filter; renderMessages(sub); });
+  const find = id => list.find(m => String(m.id) === String(id));
+  root.querySelectorAll('[data-publish]').forEach(b => b.onclick = () => updateMessage(b.dataset.publish, {status: 'published'}, 'Publicada.'));
+  root.querySelectorAll('[data-hide]').forEach(b => b.onclick = () => updateMessage(b.dataset.hide, {status: 'hidden'}, 'Retirada da projecção.'));
+  root.querySelectorAll('[data-reject]').forEach(b => b.onclick = () => updateMessage(b.dataset.reject, {status: 'rejected'}, 'Rejeitada.'));
+  root.querySelectorAll('[data-delete]').forEach(b => b.onclick = () => deleteMessage(b.dataset.delete));
+  root.querySelectorAll('[data-ban]').forEach(b => b.onclick = () => banFromMessage(find(b.dataset.ban)));
+  root.querySelectorAll('[data-edit]').forEach(b => b.onclick = () => editInline(find(b.dataset.edit)));
 }
-
-async function editMessage(message) {
-  if (!message) return;
-  const name = prompt('Nome:',message.guest_name);
-  if (name === null) return;
-  const body = prompt('Mensagem:',message.body);
-  if (body === null) return;
-  await updateMessage(message.id,{guest_name:name,body});
+const STATUS = {pending: 'POR APROVAR', published: 'PUBLICADA', rejected: 'REJEITADA', hidden: 'RETIRADA'};
+function messageItem(m) {
+  const actions = [
+    m.status !== 'published' ? `<button data-publish="${m.id}">${m.status === 'pending' ? 'APROVAR' : 'PUBLICAR'}</button>` : `<button class="adm-ghost" data-hide="${m.id}">RETIRAR</button>`,
+    m.status === 'pending' ? `<button class="adm-ghost" data-reject="${m.id}">REJEITAR</button>` : '',
+    `<button class="adm-ghost" data-edit="${m.id}">EDITAR</button>`,
+    m.canBan && !m.banned ? `<button class="adm-danger" data-ban="${m.id}">BANIR</button>` : '',
+    `<button class="adm-danger adm-icon" data-delete="${m.id}" title="Eliminar definitivamente">ELIMINAR</button>`
+  ].join('');
+  return `<article class="adm-msg" data-id="${m.id}">
+    <div class="adm-msg-meta"><strong>${esc(m.guest_name)}</strong><span class="adm-pill s-${m.status}">${STATUS[m.status] || esc(m.status)}</span>${m.banned ? '<span class="adm-pill s-banned">BANID@</span>' : ''}<small>${fmtTime(m.created_at)}</small></div>
+    <p class="adm-msg-body">${esc(m.body)}</p>
+    <div class="adm-row adm-actions">${actions}</div></article>`;
 }
-
-async function banAuthor(message) {
-  if (!message) return;
-  if (!confirm('Banir ' + (message.guest_name || 'este convidado') + '? O telemóvel deixa de poder enviar mensagens e as mensagens dele por aprovar ou publicadas são retiradas.')) return;
-  try { await a('message/' + message.id + '/ban', {method:'POST', body:'{}'}); await loadMessages(); }
-  catch (error) { alert(error.message); }
+async function updateMessage(id, changes, ok) {
+  try { await a('message/' + id, {method: 'PATCH', body: JSON.stringify(changes)}); if (ok) toast(ok, 'ok'); render(true); refreshLive(); }
+  catch (e) { toast(e.message, 'err'); }
 }
-
-async function unban(id) {
-  try { await a('ban/' + encodeURIComponent(id), {method:'DELETE'}); await loadMessages(); }
-  catch (error) { alert(error.message); }
-}
-
 async function deleteMessage(id) {
-  if (!confirm('Eliminar definitivamente esta mensagem? Esta acção não pode ser anulada.')) return;
-  try { await a('message/'+id,{method:'DELETE'}); await loadMessages(); }
-  catch (error) { alert(error.message); }
+  if (!confirm('Eliminar definitivamente esta mensagem? Não pode ser anulado.')) return;
+  try { await a('message/' + id, {method: 'DELETE'}); toast('Eliminada.', 'ok'); render(true); refreshLive(); } catch (e) { toast(e.message, 'err'); }
+}
+async function banFromMessage(m) {
+  if (!m || !confirm('Banir ' + (m.guest_name || 'este convidado') + '? O telemóvel deixa de poder enviar mensagens e as mensagens dele por aprovar ou publicadas são retiradas.')) return;
+  try { await a('message/' + m.id + '/ban', {method: 'POST', body: '{}'}); toast('Banid@.', 'ok'); render(true); refreshLive(); } catch (e) { toast(e.message, 'err'); }
+}
+function editInline(m) {
+  const card = root.querySelector(`.adm-msg[data-id="${m.id}"]`); if (!card) return;
+  card.classList.add('adm-editing');
+  card.innerHTML = `<label>NOME</label><input class="e-name" value="${esc(m.guest_name)}"><label>MENSAGEM</label><textarea class="e-body">${esc(m.body)}</textarea>
+    <div class="adm-row"><button class="e-save">GUARDAR</button><button class="adm-ghost e-cancel">CANCELAR</button></div>`;
+  card.querySelector('.e-cancel').onclick = () => render(true);
+  card.querySelector('.e-save').onclick = () => updateMessage(m.id, {guest_name: card.querySelector('.e-name').value, body: card.querySelector('.e-body').value}, 'Mensagem actualizada.');
 }
 
-if (token) panel();
+async function renderDevices() {
+  root.innerHTML = `<section class="adm-card adm-span"><p class="adm-muted">A carregar…</p></section>`;
+  let d;
+  try { d = await a('devices'); } catch (e) { root.innerHTML = `<section class="adm-card"><p class="adm-error">${esc(e.message)}</p></section>`; return; }
+  const list = d.devices || [];
+  root.innerHTML = `
+    <section class="adm-card adm-span">
+      <header class="adm-card-head"><h2>Devices</h2><small>Telemóveis que enviaram mensagens. Um telemóvel banido não pode enviar mensagens (votar e pesquisar continuam). Janela anónima conta como outro telemóvel.</small></header>
+      ${d.unavailable ? '<p class="adm-error">Indisponível até ser aplicada a migração 0003.</p>' : ''}
+      <div class="adm-list" id="bans">${list.map(x => `
+        <article class="adm-device${x.banned ? ' is-banned' : ''}">
+          <div class="adm-device-id"><strong>${esc(x.name || 'Guest')}</strong><code>#${shortId(x.id)}</code>${x.banned ? '<span class="adm-pill s-banned">BANID@</span>' : ''}</div>
+          <div class="adm-device-stats"><span><b>${x.total}</b> mensagens</span><span><b>${x.published}</b> publicadas</span><span><b>${x.pending}</b> por aprovar</span><span><b>${x.rejected}</b> rejeitadas</span><small>última ${fmtTime(x.last_at)}</small></div>
+          <div class="adm-row">${x.banned ? `<button class="adm-ghost" data-unban="${esc(x.id)}">DESBANIR</button>` : `<button class="adm-danger" data-ban-device="${esc(x.id)}" data-name="${esc(x.name || '')}">BANIR</button>`}</div>
+        </article>`).join('') || '<p class="adm-empty">Ninguém está banido e ainda não há telemóveis com mensagens.</p>'}</div>
+    </section>`;
+  root.querySelectorAll('[data-unban]').forEach(b => b.onclick = async () => { try { await a('ban/' + encodeURIComponent(b.dataset.unban), {method: 'DELETE'}); toast('Desbanid@.', 'ok'); renderDevices(); } catch (e) { toast(e.message, 'err'); } });
+  root.querySelectorAll('[data-ban-device]').forEach(b => b.onclick = async () => {
+    if (!confirm('Banir ' + (b.dataset.name || 'este telemóvel') + '? As mensagens dele por aprovar ou publicadas são retiradas.')) return;
+    try { await a('ban/' + encodeURIComponent(b.dataset.banDevice), {method: 'POST', body: '{}'}); toast('Banid@.', 'ok'); renderDevices(); refreshLive(); } catch (e) { toast(e.message, 'err'); }
+  });
+}
+
+// ---------- Abrir janelas ----------
+function screenUrl(key) {
+  const ev = encodeURIComponent(CODE);
+  return ({room: '/room?event=' + ev, guest: '/guest?event=' + ev + '&preview=1', qr: '/qr?event=' + ev, dj: '/dj?event=' + ev})[key];
+}
+function openScreen(key) {
+  const names = {room: 'dj-slice-room', guest: 'dj-slice-guest-preview', qr: 'dj-slice-qr', dj: 'dj-slice-dj'};
+  const w = window.open(screenUrl(key), names[key], key === 'guest' ? 'popup,width=400,height=860' : '');
+  if (w) w.focus(); else toast('O browser bloqueou a janela. Permite pop-ups para este site.', 'err');
+}
+function bindOpen(scope) { scope.querySelectorAll('[data-open]').forEach(b => b.onclick = () => openScreen(b.dataset.open)); }
+
+function renderProjector() {
+  root.innerHTML = `
+    <section class="adm-card adm-span">
+      <header class="adm-card-head"><h2>Projector</h2><small>Ecrã da sala. Abre, arrasta a janela para o projector e põe em ecrã inteiro (F11 / ⌃⌘F).</small></header>
+      <div class="adm-row"><button data-open="room">ABRIR PROJECTOR ↗</button></div>
+      <div class="adm-preview adm-preview-16x9"><iframe title="Pré-visualização do projector" src="${screenUrl('room')}" loading="lazy" tabindex="-1"></iframe></div>
+    </section>`;
+  bindOpen(root); fitPreviews();
+}
+function renderPeople() {
+  root.innerHTML = `
+    <section class="adm-card adm-span adm-people">
+      <div>
+        <header class="adm-card-head"><h2>Party People</h2><small>O ecrã do público, em tempo real. Só leitura: nada do que fizeres aqui conta como voto ou mensagem.</small></header>
+        <div class="adm-row"><button data-open="guest">ABRIR EM JANELA ↗</button></div>
+      </div>
+      <div class="adm-phone"><iframe title="Pré-visualização do ecrã do público" src="${screenUrl('guest')}" loading="lazy"></iframe></div>
+    </section>`;
+  bindOpen(root);
+}
+function renderQr() {
+  const guest = new URL('/guest', location.origin); guest.searchParams.set('event', CODE);
+  const custom = new URL('/guest', 'https://pede-e-fatia.criativa.org'); custom.searchParams.set('event', CODE);
+  root.innerHTML = `
+    <section class="adm-card adm-span adm-qr">
+      <div>
+        <header class="adm-card-head"><h2>QR Invite</h2><small>Gera o QR de entrada na festa para imprimir, partilhar ou mostrar num ecrã à porta.</small></header>
+        <label for="qr-url">ENDEREÇO DO CONVITE</label>
+        <div class="adm-chips" id="qr-presets">
+          <button class="adm-chip active" data-url="${guest.href}">ESTE ENDEREÇO</button>
+          <button class="adm-chip" data-url="${custom.href}">PEDE-E-FATIA.CRIATIVA.ORG</button>
+        </div>
+        <input id="qr-url" value="${guest.href}">
+        <label for="qr-title">TEXTO POR CIMA (IMPRESSÃO)</label><input id="qr-title" value="ENTRA NA FESTA">
+        <label for="qr-size">TAMANHO DO PNG</label>
+        <select id="qr-size"><option value="512">512 px</option><option value="1024" selected>1024 px</option><option value="2048">2048 px (impressão grande)</option></select>
+        <div class="adm-row"><button id="qr-download">DESCARREGAR PNG</button><button class="adm-ghost" id="qr-print">IMPRIMIR</button><button class="adm-ghost" id="qr-copy">COPIAR LINK</button><button class="adm-ghost" data-open="qr">ABRIR ECRÃ QR ↗</button></div>
+        <p class="adm-muted" id="qr-note"></p>
+      </div>
+      <div class="adm-qr-preview"><div id="qr-box"></div><small id="qr-label"></small></div>
+    </section>`;
+  bindOpen(root);
+  const box = $('#qr-box'), url = $('#qr-url');
+  const draw = () => {
+    box.replaceChildren();
+    try { new QRCode(box, {text: url.value, width: 240, height: 240, colorDark: '#111111', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M}); } catch {}
+    box.querySelector('canvas')?.setAttribute('aria-hidden', 'true');
+    $('#qr-label').textContent = url.value;
+    $('#qr-note').textContent = url.value.includes('criativa.org') ? 'O domínio pede-e-fatia.criativa.org só funciona depois de o CNAME estar activo no cPanel.' : '';
+  };
+  url.oninput = draw;
+  root.querySelectorAll('[data-url]').forEach(b => b.onclick = () => { root.querySelectorAll('[data-url]').forEach(x => x.classList.toggle('active', x === b)); url.value = b.dataset.url; draw(); });
+  const big = () => { const n = Number($('#qr-size').value), tmp = document.createElement('div'); new QRCode(tmp, {text: url.value, width: n, height: n, colorDark: '#111111', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M}); return tmp.querySelector('canvas').toDataURL('image/png'); };
+  $('#qr-download').onclick = () => { const l = document.createElement('a'); l.href = big(); l.download = 'pede-e-fatia-qr-' + CODE + '.png'; l.click(); };
+  $('#qr-copy').onclick = async () => { try { await navigator.clipboard.writeText(url.value); toast('Link copiado.', 'ok'); } catch { toast(url.value); } };
+  $('#qr-print').onclick = () => {
+    const w = window.open('', 'qr-print'); if (!w) return toast('Permite pop-ups para imprimir.', 'err');
+    w.document.write(`<!doctype html><title>QR — PEDE & FATIA</title><style>body{margin:0;font-family:system-ui,sans-serif;display:grid;place-items:center;min-height:100vh;text-align:center}h1{font-size:44px;margin:0 0 6px;letter-spacing:-.02em}h2{font-size:22px;margin:0 0 28px;font-weight:600}img{width:70vmin;max-width:520px;image-rendering:pixelated}p{font:14px monospace;margin-top:18px;word-break:break-all}</style><div><h1>${esc($('#qr-title').value)}</h1><h2>PEDE &amp; FATIA</h2><img src="${big()}" alt="QR"><p>${esc(url.value)}</p></div><script>onload=()=>setTimeout(()=>print(),200)<\/script>`);
+    w.document.close();
+  };
+  draw();
+}
+async function renderDj() {
+  root.innerHTML = `
+    <div class="adm-grid">
+      <section class="adm-card">
+        <header class="adm-card-head"><h2>DJ Controller</h2><small>Top 15 mais votadas: o DJ marca "A tocar" (aparece no projector) e tira as que já tocaram.</small></header>
+        <div class="adm-now" id="adm-now"><small>A TOCAR</small><strong>—</strong></div>
+        <div class="adm-row"><button data-open="dj">ABRIR DJ CONTROLLER ↗</button></div>
+      </section>
+      <section class="adm-card">
+        <header class="adm-card-head"><h2>PIN do DJ</h2><small>Cria um PIN de 4 números sempre que quiseres. Com ele o DJ só entra no ecrã do DJ.</small></header>
+        <p id="djPinState" class="adm-muted">A verificar…</p>
+        <div class="dj-pin-row">
+          <input id="djPin" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="off" placeholder="0000">
+          <button id="djPinGen" class="adm-ghost">GERAR</button>
+          <button id="djPinSave">GUARDAR PIN DO DJ</button>
+          <button id="djPinDel" class="adm-danger" hidden>REMOVER</button>
+        </div>
+        <p id="djPinMsg" class="dj-pin-msg" role="status"></p>
+      </section>
+    </div>`;
+  bindOpen(root); bindDjPin();
+  try { const st = await api('state'); const n = st.nowPlaying; $('#adm-now strong').textContent = n ? n.title + ' — ' + n.artist : 'Nada marcado'; } catch {}
+}
+
+// PIN do DJ: o admin cria/muda quando quiser. O PIN só é mostrado no momento em que é guardado.
+async function loadDjPin() {
+  const state = $('#djPinState'); if (!state) return;
+  try {
+    const d = await a('dj-pin');
+    state.textContent = d.unavailable ? 'PIN do DJ indisponível até ser aplicada a migração 0005.'
+      : d.set ? 'O DJ tem PIN próprio (definido ' + String(d.updatedAt || '').replace('T', ' ').slice(0, 16) + ' UTC). Com ele só entra no ecrã do DJ.'
+      : 'Sem PIN próprio: o DJ entra com o PIN do admin (e fica com acesso ao admin).';
+    $('#djPinDel').hidden = !d.set;
+  } catch (e) { state.textContent = e.message; }
+}
+function bindDjPin() {
+  const input = $('#djPin'), msg = $('#djPinMsg'); if (!input) return;
+  input.oninput = () => { input.value = input.value.replace(/\D/g, '').slice(0, 4); };
+  $('#djPinGen').onclick = () => { input.value = String(crypto.getRandomValues(new Uint32Array(1))[0] % 10000).padStart(4, '0'); msg.textContent = 'PIN gerado. Carrega em GUARDAR PIN DO DJ para o activar.'; };
+  $('#djPinSave').onclick = async () => {
+    const pin = input.value;
+    if (!/^\d{4}$/.test(pin)) { msg.textContent = 'O PIN tem de ter 4 números.'; return; }
+    try {
+      await a('dj-pin', {method: 'POST', body: JSON.stringify({pin})});
+      msg.innerHTML = 'PIN do DJ activo: <strong class="dj-pin-show">' + pin + '</strong> — passa-o ao DJ agora; depois não volta a ser mostrado. A sessão anterior do DJ foi terminada.';
+      input.value = ''; loadDjPin();
+    } catch (e) { msg.textContent = e.message; }
+  };
+  $('#djPinDel').onclick = async () => {
+    if (!confirm('Remover o PIN do DJ? A sessão do DJ é terminada e ele passa a precisar do PIN do admin.')) return;
+    try { await a('dj-pin', {method: 'DELETE'}); msg.textContent = 'PIN do DJ removido.'; loadDjPin(); } catch (e) { msg.textContent = e.message; }
+  };
+  loadDjPin();
+}
+
+// Pré-visualização 16:9 do projector: escala um iframe de 1600x900 para a largura do cartão.
+function fitPreviews() {
+  document.querySelectorAll('.adm-preview-16x9').forEach(p => { const f = p.querySelector('iframe'); if (f) f.style.transform = 'scale(' + (p.clientWidth / 1600) + ')'; });
+}
+window.addEventListener('resize', fitPreviews);
+
+if (token) start();
