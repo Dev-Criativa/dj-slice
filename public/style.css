@@ -479,3 +479,8 @@ button.active{outline-color:var(--acid)}
  color:var(--acid);
 }
 .mobile .option:disabled{opacity:.58;cursor:not-allowed}
+
+/* Farmador de Aura: estados da mensagem */
+#aura-status.aura-ok{border-color:var(--acid);color:var(--acid)}
+#aura-status.aura-no{border-color:var(--red);color:var(--red)}
+.mobile textarea:disabled,.mobile input:disabled,.mobile #send:disabled{opacity:.45}

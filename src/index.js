@@ -98,7 +98,7 @@ function cooldownError(seconds){
  const mins=Math.max(1,Math.ceil(seconds/60));
  return new Response(JSON.stringify({error:"O TEU VOTO JÁ FOI REGISTADO. VOLTA A TENTAR EM "+mins+" MIN.",code:"VOTE_COOLDOWN",retryAfterSeconds:seconds}),{status:429,headers:{"content-type":"application/json","cache-control":"no-store","retry-after":String(Math.max(1,seconds))}});
 }
-async function state(env,e,key){
+async function state(env,e,key,msgId=0){
  const [msgs,tracks,poll,opts]=await Promise.all([
  env.DB.prepare("SELECT id,guest_name,body FROM messages WHERE event_id=? AND status='published' ORDER BY id DESC LIMIT 25").bind(e.id).all(),
  env.DB.prepare("SELECT t.id,t.tidal_id,t.title,t.artist,t.album,t.artwork_url,(COALESCE((SELECT baseline_votes FROM track_vote_baselines b WHERE b.track_id=t.id),0)+COALESCE((SELECT COUNT(*) FROM track_votes v WHERE v.track_id=t.id),0)+COALESCE((SELECT COUNT(*) FROM track_vote_events v WHERE v.track_id=t.id),0)) AS votes FROM tracks t WHERE t.event_id=? ORDER BY votes DESC,t.id ASC LIMIT 25").bind(e.id).all(),
@@ -110,7 +110,8 @@ async function state(env,e,key){
   cooldownRemaining(env,e.id,key,"music"),
   poll?env.DB.prepare("SELECT option_id FROM poll_votes WHERE poll_id=? AND voter_key=?").bind(poll.id,key).first():Promise.resolve(null)
  ]);
- return {event:{code:e.code,title:env.EVENT_TITLE||e.title,activeMoment:e.active_moment},messages:msgs.results,tracks:tracks.results,poll:poll?{...poll,options:opts.results}:null,voting:{styleWarsRetryAfterSeconds:styleCooldown,musicRetryAfterSeconds:musicCooldown,myStyleWarsOptionId:myVote?.option_id??null}};
+ const mine=msgId>0?await env.DB.prepare("SELECT id,status FROM messages WHERE id=? AND event_id=?").bind(msgId,e.id).first():null;
+ return {event:{code:e.code,title:env.EVENT_TITLE||e.title,activeMoment:e.active_moment},messages:msgs.results,tracks:tracks.results,poll:poll?{...poll,options:opts.results}:null,voting:{styleWarsRetryAfterSeconds:styleCooldown,musicRetryAfterSeconds:musicCooldown,myStyleWarsOptionId:myVote?.option_id??null},myMessage:msgId>0?(mine?{id:mine.id,status:mine.status}:{id:msgId,status:'deleted'}):null};
 }
 export default {async fetch(req,env,ctx){
  const u=new URL(req.url);
@@ -122,8 +123,8 @@ export default {async fetch(req,env,ctx){
  const m=p.match(/^\/api\/([A-Z0-9_-]+)\/(.*)$/i);if(!m)return J({error:"Endpoint inválido"},404);
  const e=await event(env,m[1]);if(!e)return J({error:"Evento não encontrado"},404);
  const a=m[2],key=req.headers.get("x-voter-key")||"";
- if(a==="state"&&req.method==="GET")return J(await state(env,e,key));
- if(a==="message"&&req.method==="POST"){if(!await withinLimit(env.MESSAGE_LIMITER,key))return tooFast("ESTÁS A ENVIAR MENSAGENS DEPRESSA DEMAIS. TENTA DAQUI A UM MINUTO.");const b=await req.json(),msg=clean(b.message);if(msg.length<2)return J({error:"Mensagem demasiado curta"},400);await env.DB.prepare("INSERT INTO messages(event_id,guest_name,body) VALUES(?,?,?)").bind(e.id,clean(b.name,40)||"Guest",msg).run();return J({ok:true,moderated:true})}
+ if(a==="state"&&req.method==="GET")return J(await state(env,e,key,Number(u.searchParams.get("msg"))||0));
+ if(a==="message"&&req.method==="POST"){if(!await withinLimit(env.MESSAGE_LIMITER,key))return tooFast("ESTÁS A ENVIAR MENSAGENS DEPRESSA DEMAIS. TENTA DAQUI A UM MINUTO.");const b=await req.json(),msg=clean(b.message);if(msg.length<2)return J({error:"Mensagem demasiado curta"},400);const ins=await env.DB.prepare("INSERT INTO messages(event_id,guest_name,body) VALUES(?,?,?) RETURNING id").bind(e.id,clean(b.name,40)||"Guest",msg).first();return J({ok:true,moderated:true,id:ins?.id??null})}
  if(a==="poll/vote"&&req.method==="POST"){
   if(!key)return J({error:"Voter key em falta"},400);
   if(e.active_moment!=="m2")return J({error:"Poll fechada"},409);

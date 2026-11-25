@@ -88,7 +88,8 @@ function bindM3Modal(content) {
 
 async function draw() {
   try {
-    const d = await api('state');
+    const myMsg = auraMessageId();
+    const d = await api('state' + (myMsg ? '?msg=' + myMsg : ''));
     const moment = d.event.activeMoment;
     const content = document.querySelector('#content');
     document.querySelector('#title').textContent = d.event.title;
@@ -100,6 +101,7 @@ async function draw() {
     if (moment === renderedMoment) {
       if (moment === 'm2') renderPoll(d.poll, d.voting);
       if (moment === 'm1') { renderMusicStatus(d.voting); renderTopTracks(d.tracks, d.voting); }
+      if (moment === 'm1' || moment === 'm2') renderAura(d.myMessage);
       return;
     }
     renderedMoment = moment;
@@ -111,15 +113,17 @@ async function draw() {
     document.querySelector('.mobile')?.classList.remove('m3-mode','m4-mode','pizza-mode');
 
     if (moment === 'm1') {
-      content.innerHTML = '<h2>Sugere uma música</h2><p id="music-vote-status" class="vote-cooldown" role="status" hidden></p><div class="track-search"><input id="q" autocomplete="off" placeholder="Pesquisa por música ou artista"><div id="suggestions" class="track-suggestions"></div><div id="results" class="track-results"></div></div><h2>Vota nas que já estão na lista</h2><div id="top-tracks" class="track-results"></div><hr><h2>Mural de mensagens</h2><input id="name" placeholder="O teu nome"><textarea id="msg" placeholder="Escreve uma mensagem"></textarea><button id="send">ENVIAR PARA APROVAÇÃO</button>';
+      content.innerHTML = '<h2>Sugere uma música</h2><p id="music-vote-status" class="vote-cooldown" role="status" hidden></p><div class="track-search"><input id="q" autocomplete="off" placeholder="Pesquisa por música ou artista"><div id="suggestions" class="track-suggestions"></div><div id="results" class="track-results"></div></div><h2>Vota nas que já estão na lista</h2><div id="top-tracks" class="track-results"></div><hr><h2>Farmador de Aura</h2><p id="aura-status" class="vote-cooldown" role="status" hidden></p><input id="name" placeholder="O teu nome"><textarea id="msg" placeholder="Escreve uma mensagem"></textarea><button id="send">ENVIAR PARA APROVAÇÃO</button>';
       renderMusicStatus(d.voting);
       renderTopTracks(d.tracks, d.voting);
       bindTrackSearch();
       bindMessage();
+      renderAura(d.myMessage);
     } else if (moment === 'm2') {
-      content.innerHTML = '<h2 id="poll-question">A carregar votação…</h2><div id="poll-options"></div><hr><h2>Mural de mensagens</h2><input id="name" placeholder="O teu nome"><textarea id="msg" placeholder="Escreve uma mensagem"></textarea><button id="send">ENVIAR PARA APROVAÇÃO</button>';
+      content.innerHTML = '<h2 id="poll-question">A carregar votação…</h2><div id="poll-options"></div><hr><h2>Farmador de Aura</h2><p id="aura-status" class="vote-cooldown" role="status" hidden></p><input id="name" placeholder="O teu nome"><textarea id="msg" placeholder="Escreve uma mensagem"></textarea><button id="send">ENVIAR PARA APROVAÇÃO</button>';
       renderPoll(d.poll, d.voting);
       bindMessage();
+      renderAura(d.myMessage);
     } else if (moment === 'm3') {
       content.classList.add('m3-content');
       document.querySelector('.mobile')?.classList.add('m3-mode');
@@ -192,16 +196,49 @@ function bindTrackSearch(){
  input.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();clearTimeout(timer);search()}});
 }
 
+// Farmador de Aura: estado da última mensagem deste telemóvel.
+// pending -> bloqueado; rejected/hidden -> negada; published -> farmada. Depois de decidida, pode enviar outra.
+const AURA_KEY = 'ee-aura-' + CODE;
+function auraMessageId() { try { return Number(localStorage.getItem(AURA_KEY)) || 0; } catch { return 0; } }
+const AURA_TEXT = {
+  pending: 'A TUA AURA ESTÁ À ESPERA DE APROVAÇÃO.',
+  rejected: 'A TUA AURA FOI NEGADA. FARMA ALGO MELHOR.',
+  hidden: 'A TUA AURA FOI NEGADA. FARMA ALGO MELHOR.',
+  published: 'A TUA AURA FOI FARMADA. TODOS VÃO SABER!!'
+};
+let auraNotice = '';
+function renderAura(myMessage) {
+  const status = document.querySelector('#aura-status');
+  if (!status) return;
+  const st = myMessage?.status;
+  if (st === 'deleted') { try { localStorage.removeItem(AURA_KEY); } catch {} }
+  const locked = st === 'pending';
+  const text = AURA_TEXT[st] || auraNotice;
+  status.textContent = text;
+  status.hidden = !text;
+  status.classList.toggle('aura-ok', st === 'published');
+  status.classList.toggle('aura-no', st === 'rejected' || st === 'hidden');
+  ['#name', '#msg', '#send'].forEach(sel => { const el = document.querySelector(sel); if (el) el.disabled = locked; });
+}
 function bindMessage() {
-  document.querySelector('#send').onclick = async () => {
+  const send = document.querySelector('#send');
+  try { const saved = localStorage.getItem('ee-name'); if (saved) document.querySelector('#name').value = saved; } catch {}
+  send.onclick = async () => {
     const name = document.querySelector('#name').value.trim();
     const message = document.querySelector('#msg').value.trim();
-    if (!message) return alert('Escreve uma mensagem primeiro.');
+    if (!message) { auraNotice = 'ESCREVE UMA MENSAGEM PRIMEIRO.'; renderAura(null); return; }
+    send.disabled = true;
     try {
-      await api('message', {method:'POST',body:JSON.stringify({name,message})});
+      const r = await api('message', {method:'POST', body:JSON.stringify({name, message})});
+      try { if (r.id) localStorage.setItem(AURA_KEY, String(r.id)); if (name) localStorage.setItem('ee-name', name); } catch {}
       document.querySelector('#msg').value = '';
-      alert('Mensagem enviada para aprovação.');
-    } catch (error) { alert(error.message); }
+      auraNotice = '';
+      renderAura({id: r.id, status: 'pending'});
+    } catch (error) {
+      auraNotice = String(error.message || 'NÃO FOI POSSÍVEL ENVIAR.').toUpperCase();
+      renderAura(null);
+      send.disabled = false;
+    }
   };
 }
 
