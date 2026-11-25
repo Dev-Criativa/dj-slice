@@ -40,6 +40,16 @@ function renderPoll(poll, voting) {
   });
 }
 
+function bindM3Modal(content) {
+  const modal = content.querySelector('.m3-modal'), open = content.querySelector('.m3-button');
+  if (!modal || !open) return;
+  const close = modal.querySelector('.pizza-modal-close'), ok = modal.querySelector('.pizza-modal-ok');
+  const show = () => { modal.classList.add('visible'); modal.setAttribute('aria-hidden', 'false'); ok.focus(); };
+  const hide = () => { modal.classList.remove('visible'); modal.setAttribute('aria-hidden', 'true'); open.focus(); };
+  open.onclick = show; close.onclick = hide; ok.onclick = hide;
+  modal.onclick = e => { if (e.target === modal) hide(); };
+}
+
 async function draw() {
   try {
     const d = await api('state');
@@ -75,7 +85,18 @@ async function draw() {
     } else if (moment === 'm3') {
       content.classList.add('m3-content');
       document.querySelector('.mobile')?.classList.add('m3-mode');
-      content.innerHTML = '<h2 class="m3-headline"><span>MIDNIGHT</span><span>SLICE.</span></h2><div class="m3-visual"><img src="/m3-pizza.webp" alt="Ilustração de uma mão a segurar uma fatia de pizza" onerror="this.parentNode.classList.add(\'is-missing\')"></div><p class="m3-instruction">A PIZZA ESTÁ SERVIDA.<br>VAI BUSCAR A TUA FATIA.</p>';
+      content.innerHTML = '<h2 class="m3-headline"><span>MIDNIGHT</span><span>SLICE.</span></h2>'
+        + '<div class="m3-visual"><img src="/m3-pizza.webp" alt="Ilustração de uma mão a segurar uma fatia de pizza" onerror="this.parentNode.classList.add(\'is-missing\')"></div>'
+        + '<p class="m3-instruction">A PIZZA ESTÁ SERVIDA.<br>VAI BUSCAR A TUA FATIA.</p>'
+        + '<button type="button" class="m3-button"><span class="m3-button-icon" aria-hidden="true">◢</span><span>COMO PEDIR A FATIA</span></button>'
+        + '<div class="pizza-modal m3-modal" aria-hidden="true"><section class="pizza-modal-card" role="dialog" aria-modal="true" aria-labelledby="m3-modal-title">'
+        + '<button class="pizza-modal-close" type="button" aria-label="Fechar">×</button>'
+        + '<p class="pizza-modal-kicker">PEDE &amp; FATIA · MIDNIGHT SLICE</p>'
+        + '<h3 id="m3-modal-title">A TUA FATIA<br>ESTÁ À ESPERA.</h3>'
+        + '<p>Vai ao balcão das pizzas e troca uma das tuas fichas por uma fatia.</p>'
+        + '<strong>SEM LIMITES.<br>COME ATÉ NÃO CABERES NAS PORTAS!</strong>'
+        + '<button type="button" class="pizza-modal-ok">ENTENDIDO</button></section></div>';
+      bindM3Modal(content);
     } else if (moment === 'm4') {
       content.innerHTML = '<div class="device-call" data-m4-trigger><h2>TURN ON<br><em>THE LIGHTS.</em></h2><p>LIGA A LANTERNA DO TEU TELEMÓVEL.</p></div>';
       window.renderM4?.();
