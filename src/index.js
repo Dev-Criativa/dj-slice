@@ -53,7 +53,7 @@ function cooldownError(seconds){
 async function state(env,e,key){
  const [msgs,tracks,poll,opts]=await Promise.all([
  env.DB.prepare("SELECT id,guest_name,body FROM messages WHERE event_id=? AND status='published' ORDER BY id DESC LIMIT 25").bind(e.id).all(),
- env.DB.prepare("SELECT t.id,t.tidal_id,t.title,t.artist,t.album,t.artwork_url,(COALESCE((SELECT COUNT(*) FROM track_votes v WHERE v.track_id=t.id),0)+COALESCE((SELECT COUNT(*) FROM track_vote_events v WHERE v.track_id=t.id),0)) AS votes FROM tracks t WHERE t.event_id=? ORDER BY votes DESC,t.id ASC LIMIT 25").bind(e.id).all(),
+ env.DB.prepare("SELECT t.id,t.tidal_id,t.title,t.artist,t.album,t.artwork_url,(COALESCE((SELECT baseline_votes FROM track_vote_baselines b WHERE b.track_id=t.id),0)+COALESCE((SELECT COUNT(*) FROM track_votes v WHERE v.track_id=t.id),0)+COALESCE((SELECT COUNT(*) FROM track_vote_events v WHERE v.track_id=t.id),0)) AS votes FROM tracks t WHERE t.event_id=? ORDER BY votes DESC,t.id ASC LIMIT 25").bind(e.id).all(),
  env.DB.prepare("SELECT * FROM polls WHERE event_id=? AND active=1 ORDER BY id DESC LIMIT 1").bind(e.id).first(),
  env.DB.prepare("SELECT o.id,o.label,(SELECT COUNT(*) FROM poll_votes v WHERE v.option_id=o.id) votes FROM poll_options o JOIN polls p ON p.id=o.poll_id WHERE p.event_id=? AND p.active=1 ORDER BY o.sort_order").bind(e.id).all()
  ]);
