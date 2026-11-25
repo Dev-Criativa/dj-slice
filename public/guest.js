@@ -57,6 +57,8 @@ async function draw() {
       return;
     }
     renderedMoment = moment;
+    delete content.dataset.m4Ready;
+    delete content.dataset.pizzaReady;
     content.classList.remove('m4-content','pizza-content');
     document.querySelector('.mobile')?.classList.remove('m4-mode','pizza-mode');
 
