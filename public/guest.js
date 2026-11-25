@@ -60,8 +60,8 @@ async function draw() {
     window.stopM4?.();
     delete content.dataset.m4Ready;
     delete content.dataset.pizzaReady;
-    content.classList.remove('m4-content','pizza-content');
-    document.querySelector('.mobile')?.classList.remove('m4-mode','pizza-mode');
+    content.classList.remove('m3-content','m4-content','pizza-content');
+    document.querySelector('.mobile')?.classList.remove('m3-mode','m4-mode','pizza-mode');
 
     if (moment === 'm1') {
       content.innerHTML = '<h2>Sugere uma música</h2><p id="music-vote-status" class="vote-cooldown" role="status" hidden></p><div class="track-search"><input id="q" autocomplete="off" placeholder="Pesquisa por música ou artista"><div id="suggestions" class="track-suggestions"></div><div id="results" class="track-results"></div></div><hr><h2>Mural de mensagens</h2><input id="name" placeholder="O teu nome"><textarea id="msg" placeholder="Escreve uma mensagem"></textarea><button id="send">ENVIAR PARA APROVAÇÃO</button>';
@@ -73,7 +73,9 @@ async function draw() {
       renderPoll(d.poll, d.voting);
       bindMessage();
     } else if (moment === 'm3') {
-      content.innerHTML = '<div class="device-call"><h2>MIDNIGHT<br><em>SLICE.</em></h2><p>A PIZZA ESTÁ SERVIDA. VAI BUSCAR A TUA FATIA.</p></div>';
+      content.classList.add('m3-content');
+      document.querySelector('.mobile')?.classList.add('m3-mode');
+      content.innerHTML = '<h2 class="m3-headline"><span>MIDNIGHT</span><span>SLICE.</span></h2><div class="m3-visual"><img src="/m3-pizza.png" alt="Ilustração de uma mão a segurar uma fatia de pizza" onerror="this.parentNode.classList.add(\'is-missing\')"></div><p class="m3-instruction">A PIZZA ESTÁ SERVIDA.<br>VAI BUSCAR A TUA FATIA.</p>';
     } else if (moment === 'm4') {
       content.innerHTML = '<div class="device-call" data-m4-trigger><h2>TURN ON<br><em>THE LIGHTS.</em></h2><p>LIGA A LANTERNA DO TEU TELEMÓVEL.</p></div>';
       window.renderM4?.();
