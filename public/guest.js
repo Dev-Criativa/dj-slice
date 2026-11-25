@@ -94,7 +94,7 @@ async function draw() {
         + '<p class="pizza-modal-kicker">PEDE &amp; FATIA · MIDNIGHT SLICE</p>'
         + '<h3 id="m3-modal-title">A TUA FATIA<br>ESTÁ À ESPERA.</h3>'
         + '<p>Vai ao balcão das pizzas e troca uma das tuas fichas por uma fatia.</p>'
-        + '<strong>SEM LIMITES.<br>COME ATÉ NÃO CABERES NAS PORTAS!</strong>'
+        + '<strong>SEM LIMITES.<br>COME ATÉ NÃO CONSEGUIRES PASSAR NAS PORTAS!</strong>'
         + '<button type="button" class="pizza-modal-ok">ENTENDIDO</button></section></div>';
       bindM3Modal(content);
     } else if (moment === 'm4') {
