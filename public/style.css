@@ -323,6 +323,11 @@ button.active{outline-color:var(--acid)}
  .room-track-info{gap:5px}
 }
 
+/* Slightly more breathing room between track details and vote bar */
+#primary-panel .room-track-info{gap:8px}
+#primary-panel .room-track-line{row-gap:3px}
+@media(max-width:700px){#primary-panel .room-track-info{gap:7px}#primary-panel .room-track-line{row-gap:2px}}
+
 /* Compact projector ranking: five tight rows, legible at a distance */
 #primary-content{display:flex;flex-direction:column;gap:clamp(8px,.9vh,13px)}
 #primary-panel .room-ranking{display:grid;grid-template-columns:1.8em minmax(0,1fr);gap:10px;align-items:center;margin:0;padding:0;min-height:0}
