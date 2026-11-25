@@ -1,9 +1,9 @@
 function esc(s=''){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 const code=new URLSearchParams(location.search).get('event')||'PARTY2026';
 const el=id=>document.getElementById(id);
-const guestUrl=location.origin+'/guest?event='+encodeURIComponent(code);
+const guestUrl=new URL('/guest',location.origin);guestUrl.searchParams.set('event',code);
 let qrReady=false;
-function setupProjectorQR(){const box=el('projector-qr');if(!box||qrReady||!window.QRCode)return;if(!box.childElementCount){new QRCode(box,{text:guestUrl,width:116,height:116,colorDark:'#111111',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M});}qrReady=true;}
+function setupProjectorQR(){const box=el('projector-qr');if(!box||qrReady||!window.QRCode)return;if(!box.childElementCount){new QRCode(box,{text:guestUrl.href,width:116,height:116,colorDark:'#111111',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M});}qrReady=true;}
 
 function renderMessages(messages){
   const list=(messages||[]).slice(0,4);

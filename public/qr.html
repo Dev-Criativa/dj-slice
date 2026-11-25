@@ -1,1 +1,41 @@
-<!doctype html><html lang="pt-PT"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Evento — Acesso</title><link rel="stylesheet" href="/style.css"><main class="screen qr-screen"><small>ACESSO AO EVENTO</small><h1>Entra<br><em>na festa.</em></h1><p id="eventName">A carregar evento…</p><div id="qr" class="qr-box"></div><p class="url" id="guestUrl"></p><p>Lê o código com a câmara do telemóvel.</p></main><script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script><script>const code=new URLSearchParams(location.search).get('event')||'PARTY2026';const url=location.origin+'/guest?event='+encodeURIComponent(code);document.querySelector('#guestUrl').textContent=url;new QRCode(document.querySelector('#qr'),{text:url,width:280,height:280});fetch('/api/'+encodeURIComponent(code)+'/state').then(r=>r.json()).then(d=>{document.querySelector('#eventName').textContent=d.event.title;document.title=d.event.title+' — Acesso';}).catch(()=>document.querySelector('#eventName').textContent='Evento indisponível');</script></html>
+<!doctype html>
+<html lang="pt-PT">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PEDE &amp; FATIA — Acesso</title>
+<link rel="stylesheet" href="/style.css">
+<main class="screen qr-screen">
+  <small>ACESSO AO EVENTO</small>
+  <h1>Entra<br><em>na festa.</em></h1>
+  <p id="eventName">A carregar evento…</p>
+  <div id="qr" class="qr-box" aria-label="Código QR para participar"></div>
+  <p class="url" id="guestUrl"></p>
+  <p id="qrHelp">Lê o código com a câmara do telemóvel.</p>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<script>
+(async()=>{
+  const params=new URLSearchParams(location.search);
+  const code=(params.get('event')||'PARTY2026').trim().toUpperCase();
+  const eventName=document.querySelector('#eventName');
+  const qrBox=document.querySelector('#qr');
+  try{
+    const response=await fetch('/api/'+encodeURIComponent(code)+'/state',{cache:'no-store'});
+    if(!response.ok) throw new Error('Evento indisponível');
+    const data=await response.json();
+    const guestUrl=new URL('/guest',location.origin);
+    guestUrl.searchParams.set('event',data.event.code||code);
+    eventName.textContent=data.event.title||'PEDE & FATIA';
+    document.title=eventName.textContent+' — Acesso';
+    document.querySelector('#guestUrl').textContent=guestUrl.href;
+    if(!window.QRCode) throw new Error('Não foi possível carregar o gerador do QR.');
+    new QRCode(qrBox,{text:guestUrl.href,width:280,height:280,colorDark:'#111111',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M});
+  }catch(error){
+    eventName.textContent=error.message;
+    document.querySelector('#qrHelp').textContent='Confirma o código do evento e actualiza o ecrã.';
+    document.querySelector('#guestUrl').textContent='';
+    qrBox.replaceChildren();
+  }
+})();
+</script>
+</html>
