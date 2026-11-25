@@ -73,3 +73,30 @@ body:has(.mobile.m4-mode){position:fixed;inset:0;min-height:0;width:100%;height:
  .mobile.m4-mode #content.m4-content .m4-torch-button{min-height:52px}
  .mobile.m4-mode #content.m4-content .m4-status{margin-top:5px;font-size:9px}
 }
+
+
+/* Final M4 balance: larger header and lower action block */
+.mobile.m4-mode header b{font-size:clamp(26px,6.76vw,35px)}
+.mobile.m4-mode header small{font-size:clamp(13px,3.38vw,14.3px)}
+.mobile.m4-mode{
+ height:100dvh;
+ padding-bottom:calc(env(safe-area-inset-bottom) + clamp(12px,2.2svh,22px));
+}
+.mobile.m4-mode #content.m4-content{
+ grid-template-rows:auto auto minmax(0,1fr) auto auto;
+}
+.mobile.m4-mode #content.m4-content .m4-instruction{
+ margin-top:clamp(10px,2svh,18px);
+ margin-bottom:clamp(12px,2.4svh,22px);
+}
+.mobile.m4-mode #content.m4-content .m4-status{
+ margin-top:clamp(8px,1.6svh,15px);
+ padding-bottom:clamp(2px,.5svh,5px);
+}
+@media(max-height:760px){
+ .mobile.m4-mode{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
+ .mobile.m4-mode header b{font-size:clamp(24px,6.2vw,31px)}
+ .mobile.m4-mode header small{font-size:12px}
+ .mobile.m4-mode #content.m4-content .m4-instruction{margin-top:8px;margin-bottom:9px}
+ .mobile.m4-mode #content.m4-content .m4-status{margin-top:7px}
+}
