@@ -185,3 +185,35 @@ body:has(.adm){background:var(--adm-ink)}
 .adm-home-tag.ext{background:transparent;color:var(--adm-gold);border:1px solid var(--adm-gold);font-size:13px}
 @media(max-width:720px){.adm-home-grid{grid-template-columns:1fr 1fr}.adm-home-card{min-height:140px;padding:16px}}
 @media(max-width:420px){.adm-home-grid{grid-template-columns:1fr}}
+
+/* Cartão de contexto do Party Controller: separadores Música / Style Wars */
+.adm-ctx-tabs{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:-8px}
+.adm-ctx-tab{padding:12px 18px;background:var(--adm-card);color:var(--adm-muted);border:1px solid var(--adm-line);border-bottom:none;font:700 12px 'DM Mono';letter-spacing:.14em;cursor:pointer}
+.adm-ctx-tab.active{color:var(--adm-ink);background:var(--adm-gold);border-color:var(--adm-gold)}
+.adm-ctx-tabs small{margin-left:auto;color:var(--adm-muted);font:11px 'DM Mono'}
+.adm-link{background:none!important;border:0!important;padding:0!important;color:var(--adm-gold)!important;font:inherit!important;text-decoration:underline;cursor:pointer;min-height:0!important}
+.adm-music-grid{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:22px;align-items:start}
+.adm-music-side{display:grid;gap:14px}
+.adm-music-stats{grid-template-columns:1fr 1fr}
+.adm-artist{font-style:normal;color:var(--adm-muted);font-size:13px;margin-left:6px}
+@media(max-width:860px){.adm-music-grid{grid-template-columns:1fr}}
+
+/* Resumo (M3/M4/M5) */
+.adm-summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.adm-sum-line{margin:12px 0 14px;display:flex;flex-direction:column;gap:4px}
+.adm-sum-line small{font:500 10px 'DM Mono';letter-spacing:.2em;color:var(--adm-muted)}
+.adm-sum-line strong{font:700 19px/1.2 'Space Grotesk';overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media(max-width:860px){.adm-summary-grid{grid-template-columns:1fr}}
+/* Contador de tempo no ar */
+.adm-timer{margin-left:4px;padding:2px 8px;background:rgba(240,195,110,.15);color:var(--adm-fg);font:700 12px 'DM Mono';letter-spacing:.06em;font-variant-numeric:tabular-nums}
+.adm-live.is-long{border-color:var(--adm-red);color:#ff8a9c;background:rgba(214,51,79,.12)}
+.adm-live.is-long .adm-timer{background:var(--adm-red);color:#fff;animation:adm-blink 1s steps(2) infinite}
+@keyframes adm-blink{50%{opacity:.55}}
+.adm-since{position:absolute;left:16px;bottom:12px;padding:3px 8px;background:rgba(240,195,110,.14);font:700 13px 'DM Mono';letter-spacing:.04em;font-style:normal;color:var(--adm-gold);font-variant-numeric:tabular-nums}
+.adm-since.is-long{background:var(--adm-red);color:#fff;animation:adm-blink 1s steps(2) infinite}
+.adm-moment{padding-bottom:34px}
+
+/* Cronómetro no selo NO AR (tabular para não "saltar") */
+#adm-live-text{font-variant-numeric:tabular-nums}
+.adm-live.is-long{border-color:var(--adm-red);color:#fff;background:rgba(214,51,79,.85);animation:adm-blink 1.2s steps(2) infinite}
+.adm-live.is-long .adm-dot{background:#fff}

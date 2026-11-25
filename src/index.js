@@ -139,7 +139,7 @@ async function state(env,e,key,msgId=0){
  const banned=await isBanned(env,e.id,key);
  const playing=await nowPlaying(env,e.id);
  const mine=msgId>0?await env.DB.prepare("SELECT id,status FROM messages WHERE id=? AND event_id=?").bind(msgId,e.id).first():null;
- return {event:{code:e.code,title:env.EVENT_TITLE||e.title,activeMoment:e.active_moment},messages:msgs.results,tracks:tracks.results,poll:poll?{...poll,options:opts.results}:null,voting:{styleWarsRetryAfterSeconds:styleCooldown,musicRetryAfterSeconds:musicCooldown,myStyleWarsOptionId:myVote?.option_id??null},nowPlaying:playing,banned,myMessage:msgId>0?(mine?{id:mine.id,status:mine.status}:{id:msgId,status:'deleted'}):null};
+ return {event:{code:e.code,title:env.EVENT_TITLE||e.title,activeMoment:e.active_moment,momentSince:e.moment_since?String(e.moment_since).replace(" ","T")+"Z":null},messages:msgs.results,tracks:tracks.results,poll:poll?{...poll,options:opts.results}:null,voting:{styleWarsRetryAfterSeconds:styleCooldown,musicRetryAfterSeconds:musicCooldown,myStyleWarsOptionId:myVote?.option_id??null},nowPlaying:playing,banned,myMessage:msgId>0?(mine?{id:mine.id,status:mine.status}:{id:msgId,status:'deleted'}):null};
 }
 export default {async fetch(req,env,ctx){
  const u=new URL(req.url);
@@ -268,7 +268,11 @@ export default {async fetch(req,env,ctx){
    catch{return J({error:"PIN do DJ indisponível: falta aplicar a migração 0005."},409)}
    return J({ok:true});
  }
- if(a==="moment"&&req.method==="POST"){const b=await req.json();if(!["m1","m2","m3","m4","m5"].includes(b.moment))return J({error:"Momento inválido"},400);await env.DB.prepare("UPDATE events SET active_moment=? WHERE id=?").bind(b.moment,e.id).run();return J({ok:true})}
+ if(a==="moment"&&req.method==="POST"){const b=await req.json();if(!["m1","m2","m3","m4","m5"].includes(b.moment))return J({error:"Momento inválido"},400);
+   // Cada vez que um momento é (re)iniciado, o contador volta a zero. Sem a migração 0006, actualiza só o momento.
+   try{await env.DB.prepare("UPDATE events SET moment_since=CURRENT_TIMESTAMP,active_moment=? WHERE id=?").bind(b.moment,e.id).run()}
+   catch{await env.DB.prepare("UPDATE events SET active_moment=? WHERE id=?").bind(b.moment,e.id).run()}
+   return J({ok:true})}
  if(a.startsWith("message/")&&req.method==="PATCH"){
    const id=Number(a.split("/")[1]),b=await req.json();
    if(!Number.isInteger(id)||id<1)return J({error:"Mensagem inválida"},400);
