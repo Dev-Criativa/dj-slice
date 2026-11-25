@@ -144,6 +144,8 @@ async function state(env,e,key,msgId=0){
 export default {async fetch(req,env,ctx){
  const u=new URL(req.url);
  let p=u.pathname;
+ // A raiz e as antigas páginas de preparação levam o público direto à festa.
+ if(p==="/"||p==="/index.html"||p==="/screen"||p==="/screen.html"){const to=new URL("/guest",u.origin);to.searchParams.set("event",u.searchParams.get("event")||env.EVENT_CODE||"PARTY2026");return Response.redirect(to.href,302)}
  const aliases={"/qr":"/qr.html","/guest":"/guest.html","/admin":"/admin.html","/room":"/room.html","/dj":"/dj.html"};
  if(aliases[p]){u.pathname=aliases[p];return env.ASSETS.fetch(new Request(u,req));}
  if(!p.startsWith("/api/"))return env.ASSETS.fetch(req);

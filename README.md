@@ -4,6 +4,8 @@ Event experience powered by Cloudflare Workers + D1.
 
 ## Public interfaces
 
+- `/` — redirects to the guest screen (`/guest?event=<EVENT_CODE>`); there is no public prep/index page.
+
 - `/qr?event=PARTY2026` — event QR display. Generates a QR only after the event code is validated.
 - `/guest?event=PARTY2026` — guest mobile interface. It reads the active moment from the Worker; the QR contains the event code, never a hard-coded moment/state.
 - `/room?event=PARTY2026` — projector display. The join QR is shown during M1 and M2 only.

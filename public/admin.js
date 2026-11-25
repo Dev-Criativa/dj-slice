@@ -51,17 +51,19 @@ $('#logout').onclick = () => { sessionStorage.removeItem('ee-admin'); token = nu
 // ---------- navegação ----------
 function readHash() {
   const [section, sub] = location.hash.replace('#', '').split('/');
+  if (!section || section === 'home') { route = {section: 'home', sub: ''}; return; }
   const m = MENU.find(x => x.id === section) || MENU[0];
   route = {section: m.id, sub: m.subs ? (m.subs.find(s => s[0] === sub) ? sub : m.subs[0][0]) : ''};
 }
 function go(section, sub) { location.hash = section + (sub ? '/' + sub : ''); }
+document.querySelector('.adm-brand').addEventListener('click', () => { if (token) go('home'); });
 window.addEventListener('hashchange', () => { if (token) { readHash(); render(); } });
 
 function renderNav() {
   navEl.hidden = false;
   navEl.innerHTML = MENU.map(m => `<button class="adm-tab${route.section === m.id ? ' active' : ''}" data-section="${m.id}">${m.label}${m.id === 'messages' && live.pending ? `<span class="adm-badge">${live.pending}</span>` : ''}</button>`).join('');
   navEl.querySelectorAll('[data-section]').forEach(b => b.onclick = () => go(b.dataset.section));
-  const m = MENU.find(x => x.id === route.section);
+  const m = MENU.find(x => x.id === route.section) || {};
   subEl.hidden = !m.subs;
   subEl.innerHTML = m.subs ? m.subs.map(([id, label]) => `<button class="adm-subtab${route.sub === id ? ' active' : ''}" data-sub="${id}">${label}${id === 'pending' && live.pending ? `<span class="adm-badge">${live.pending}</span>` : ''}</button>`).join('') : '';
   subEl.querySelectorAll('[data-sub]').forEach(b => b.onclick = () => go(route.section, b.dataset.sub));
@@ -88,15 +90,45 @@ async function refreshLive() {
     $('#adm-live').hidden = false;
     $('#adm-live-text').textContent = 'NO AR · ' + String(live.moment).toUpperCase() + (m ? ' · ' + m[1] : '');
     renderNav();
+    if (route.section === 'home') renderHome();
   } catch (e) { if (e.status === 401) { sessionStorage.removeItem('ee-admin'); location.reload(); } }
 }
 
 function render(quiet) {
   renderNav();
   const s = route.section, sub = route.sub;
+  if (s === 'home') return renderHome();
   if (s === 'party') return renderParty();
   if (s === 'messages') return sub === 'devices' ? renderDevices() : renderMessages(sub, quiet);
   if (s === 'windows') return ({projector: renderProjector, people: renderPeople, qr: renderQr, dj: renderDj})[sub]();
+}
+
+// ---------- Índice (página inicial do admin) ----------
+function renderHome() {
+  const m = MOMENTS.find(x => x[0] === live.moment);
+  const cards = [
+    ['01', 'PARTY CONTROLLER', 'Momento no ar, Style Wars e resultados ao vivo', 'go:party', m ? 'NO AR · ' + m[1] : ''],
+    ['02', 'MENSAGENS', 'Farmador de Aura: aprovar, rejeitar, editar', 'go:messages/pending', live.pending ? live.pending + ' POR APROVAR' : ''],
+    ['03', 'DEVICES', 'Telemóveis que enviaram mensagens: banir / desbanir', 'go:messages/devices', ''],
+    ['04', 'PROJECTOR', 'Ecrã da sala. Abre numa janela para o projector', 'open:room', '↗'],
+    ['05', 'PARTY PEOPLE', 'O ecrã do público, em pré-visualização', 'open:guest', '↗'],
+    ['06', 'QR INVITE', 'Gerar, descarregar e imprimir o QR de entrada', 'go:windows/qr', ''],
+    ['07', 'DJ CONTROLLER', 'Top 15, A tocar / Tocada e PIN do DJ', 'go:windows/dj', '']
+  ];
+  root.innerHTML = `
+    <section class="adm-home">
+      <p class="adm-home-kicker">A FESTA TAMBÉM É DO PÚBLICO.</p>
+      <h1>Controla<br><em>a festa.</em></h1>
+      <div class="adm-home-grid">${cards.map(([n, title, desc, action, tag]) => `
+        <button class="adm-home-card" data-action="${action}">
+          <span class="adm-home-n">${n}</span>${tag ? `<span class="adm-home-tag${tag === '↗' ? ' ext' : ''}">${tag}</span>` : ''}
+          <strong>${title}</strong><span class="adm-home-desc">${desc}</span>
+        </button>`).join('')}</div>
+    </section>`;
+  root.querySelectorAll('[data-action]').forEach(b => b.onclick = () => {
+    const [kind, target] = b.dataset.action.split(':');
+    if (kind === 'open') openScreen(target); else { const [s, sub] = target.split('/'); go(s, sub); }
+  });
 }
 
 // ---------- Party Controller ----------
