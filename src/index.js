@@ -268,9 +268,24 @@ export default {async fetch(req,env,ctx){
    catch{return J({error:"PIN do DJ indisponível: falta aplicar a migração 0005."},409)}
    return J({ok:true});
  }
+ if(a==="moment-times"&&req.method==="GET"){
+   // Total de segundos no ar por momento (o activo inclui o tempo a decorrer, calculado no cliente a partir de since).
+   try{const rows=(await env.DB.prepare("SELECT moment,seconds FROM moment_totals WHERE event_id=?").bind(e.id).all()).results;
+     const totals={};for(const r of rows)totals[r.moment]=Number(r.seconds)||0;
+     return J({totals,active:e.active_moment,since:e.moment_since?String(e.moment_since).replace(" ","T")+"Z":null})}
+   catch{return J({totals:{},unavailable:true})}
+ }
+ if(a==="moment-times/reset"&&req.method==="POST"){
+   try{await env.DB.batch([env.DB.prepare("DELETE FROM moment_totals WHERE event_id=?").bind(e.id),env.DB.prepare("UPDATE events SET moment_since=CURRENT_TIMESTAMP WHERE id=?").bind(e.id)])}
+   catch{return J({error:"Tempos indisponíveis: falta aplicar a migração 0006."},409)}
+   return J({ok:true});
+ }
  if(a==="moment"&&req.method==="POST"){const b=await req.json();if(!["m1","m2","m3","m4","m5"].includes(b.moment))return J({error:"Momento inválido"},400);
-   // Cada vez que um momento é (re)iniciado, o contador volta a zero. Sem a migração 0006, actualiza só o momento.
-   try{await env.DB.prepare("UPDATE events SET moment_since=CURRENT_TIMESTAMP,active_moment=? WHERE id=?").bind(b.moment,e.id).run()}
+   // Cada vez que um momento é (re)iniciado, o tempo que o anterior esteve no ar soma-se ao total dele
+   // e o contador volta a zero. Sem a migração 0006, actualiza só o momento.
+   try{await env.DB.batch([
+     env.DB.prepare("INSERT INTO moment_totals(event_id,moment,seconds) SELECT id,active_moment,MAX(0,CAST(strftime('%s','now') AS INTEGER)-CAST(strftime('%s',moment_since) AS INTEGER)) FROM events WHERE id=? AND moment_since IS NOT NULL AND active_moment IS NOT NULL ON CONFLICT(event_id,moment) DO UPDATE SET seconds=seconds+excluded.seconds").bind(e.id),
+     env.DB.prepare("UPDATE events SET moment_since=CURRENT_TIMESTAMP,active_moment=? WHERE id=?").bind(b.moment,e.id)])}
    catch{await env.DB.prepare("UPDATE events SET active_moment=? WHERE id=?").bind(b.moment,e.id).run()}
    return J({ok:true})}
  if(a.startsWith("message/")&&req.method==="PATCH"){

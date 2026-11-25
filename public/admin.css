@@ -217,3 +217,18 @@ body:has(.adm){background:var(--adm-ink)}
 #adm-live-text{font-variant-numeric:tabular-nums}
 .adm-live.is-long{border-color:var(--adm-red);color:#fff;background:rgba(214,51,79,.85);animation:adm-blink 1.2s steps(2) infinite}
 .adm-live.is-long .adm-dot{background:#fff}
+
+/* Relógio do tempo total em cada cartão de momento */
+.adm-head-row{flex-direction:row!important;align-items:flex-start!important;justify-content:space-between!important;gap:16px}
+.adm-head-row>div{display:flex;flex-direction:column;gap:6px}
+.adm-reset-times{flex:none;min-height:40px;padding:9px 14px!important;font-size:11px!important}
+.adm-moment .adm-clock{position:absolute;right:10px;bottom:10px;width:30px;height:30px;display:grid;place-items:center;border-radius:50%;color:var(--adm-muted);cursor:pointer;outline:none;font:inherit}
+.adm-moment .adm-clock svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+.adm-moment .adm-clock.is-used{color:var(--adm-gold)}
+.adm-moment .adm-clock:hover,.adm-moment .adm-clock:focus-visible,.adm-moment .adm-clock.open{background:rgba(240,195,110,.16);color:var(--adm-gold)}
+.adm-moment .adm-clock .adm-clock-tip{position:absolute;right:0;bottom:calc(100% + 8px);z-index:5;padding:8px 10px;white-space:nowrap;background:#0f0e0d;border:1px solid var(--adm-gold);color:var(--adm-fg);font:700 11px 'DM Mono';letter-spacing:.04em;font-variant-numeric:tabular-nums;opacity:0;transform:translateY(4px);pointer-events:none;transition:opacity .12s,transform .12s}
+.adm-moment .adm-clock:hover .adm-clock-tip,.adm-moment .adm-clock:focus-visible .adm-clock-tip,.adm-moment .adm-clock.open .adm-clock-tip{opacity:1;transform:none}
+@media(max-width:720px){.adm-head-row{flex-direction:column!important}}
+/* M2: textos das opções podem ocupar mais de uma linha (ao contrário das músicas do M1) */
+#poll-results .adm-result-line span,#sum-poll .adm-result-line span{white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere}
+#poll-results .adm-result-line,#sum-poll .adm-result-line{align-items:start}

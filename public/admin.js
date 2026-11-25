@@ -14,6 +14,21 @@ function elapsed() {
   const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), ss = s % 60;
   return {s, text: (h ? h + ':' + String(m).padStart(2, '0') : m) + ':' + String(ss).padStart(2, '0'), min: Math.floor(s / 60)};
 }
+// Tempo total no ar por momento (relógio de cada cartão).
+let times = {totals: {}, active: null, since: null};
+function fmtDur(s) {
+  s = Math.max(0, Math.floor(s)); const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), ss = s % 60;
+  return h ? h + 'h ' + String(m).padStart(2, '0') + 'm' : m ? m + 'm ' + String(ss).padStart(2, '0') + 's' : ss + 's';
+}
+async function loadTimes() { try { const d = await a('moment-times'); if (!d.unavailable) times = d; else times = {totals: {}, unavailable: true}; tickTimes(); } catch {} }
+function tickTimes() {
+  document.querySelectorAll('[data-clock]').forEach(c => {
+    const m = c.dataset.clock, running = m === times.active && times.since ? (Date.now() - new Date(times.since).getTime()) / 1000 : 0;
+    const total = (times.totals?.[m] || 0) + running;
+    c.querySelector('.adm-clock-tip').textContent = times.unavailable ? 'Disponível depois da migração 0006' : (total < 1 ? 'Ainda não esteve no ar' : 'No ar no total: ' + fmtDur(total));
+    c.classList.toggle('is-used', total >= 1);
+  });
+}
 function tick() {
   // Cronómetro dentro do selo do topo: "NO AR HÁ 12:34 · M1 · MÚSICA". Fica vermelho a partir de LONG_MINUTES.
   const el = document.querySelector('#adm-live-text'); if (!el || !live.moment) return;
@@ -23,7 +38,7 @@ function tick() {
   chip?.classList.toggle('is-long', long);
   if (chip) chip.title = long ? 'Este momento está no ar há mais de ' + LONG_MINUTES + ' minutos' : '';
 }
-setInterval(tick, 1000);
+setInterval(() => { tick(); tickTimes(); }, 1000);
 
 const MOMENTS = [
   ['m1', 'MÚSICA', 'Sugestões TIDAL, votos e Farmador de Aura'],
@@ -95,7 +110,7 @@ function start() {
   refreshTimer = setInterval(async () => {
     refreshLive();
     if (route.section === 'messages' && !document.querySelector('.adm-editing')) render(true);
-    if (route.section === 'party') { try { const st = await api('state'); renderPollLive(st); renderMusicLive(st); renderSummary(st); setCtx(st); markMoment(st.event.activeMoment); renderStats(st); } catch {} }
+    if (route.section === 'party') { try { const st = await api('state'); renderPollLive(st); renderMusicLive(st); renderSummary(st); setCtx(st); markMoment(st.event.activeMoment); renderStats(st); loadTimes(); } catch {} }
   }, 5000);
 }
 
@@ -153,8 +168,8 @@ async function renderParty() {
   root.innerHTML = `
     <div class="adm-grid">
       <section class="adm-card adm-span">
-        <header class="adm-card-head"><h2>Momento activo</h2><small>Toca num momento para o pôr no ar em todos os ecrãs.</small></header>
-        <div class="adm-moments">${MOMENTS.map(([id, name, desc], i) => `<button class="adm-moment" data-m="${id}"><b>M${i + 1}</b><strong>${name}</strong><span>${desc}</span><em>NO AR</em></button>`).join('')}</div>
+        <header class="adm-card-head adm-head-row"><div><h2>Momento activo</h2><small>Toca num momento para o pôr no ar em todos os ecrãs. O relógio de cada cartão mostra o tempo total que esteve no ar.</small></div><button class="adm-ghost adm-reset-times" id="reset-times" title="Pôr a zero o tempo total de todos os momentos">↺ RESET TIMES</button></header>
+        <div class="adm-moments">${MOMENTS.map(([id, name, desc], i) => `<button class="adm-moment" data-m="${id}"><b>M${i + 1}</b><strong>${name}</strong><span>${desc}</span><em>NO AR</em><span class="adm-clock" data-clock="${id}" role="button" tabindex="0" aria-label="Tempo total no ar de M${i + 1}"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span class="adm-clock-tip"></span></span></button>`).join('')}</div>
       </section>
       <div class="adm-ctx-tabs adm-span" role="tablist">
         <button class="adm-ctx-tab" data-ctx="music" role="tab">♪ MÚSICA</button>
@@ -239,9 +254,21 @@ async function renderParty() {
   } catch {}
   if (!opts.children.length) ['HOUSE', 'AFROBEATS', 'TECHNO'].forEach(addOpt);
   $('#opt-add').onclick = () => addOpt();
+  loadTimes();
+  root.querySelectorAll('[data-clock]').forEach(c => {
+    const toggle = ev => { ev.stopPropagation(); ev.preventDefault(); const open = !c.classList.contains('open'); root.querySelectorAll('.adm-clock.open').forEach(x => x.classList.remove('open')); c.classList.toggle('open', open); };
+    c.addEventListener('click', toggle);
+    c.addEventListener('keydown', ev => { if (ev.key === 'Enter' || ev.key === ' ') toggle(ev); });
+  });
+  document.addEventListener('click', () => root.querySelectorAll('.adm-clock.open').forEach(x => x.classList.remove('open')));
+  $('#reset-times').onclick = async () => {
+    if (!confirm('Pôr a zero o tempo total de todos os momentos? O cronómetro do momento no ar também recomeça.')) return;
+    try { await a('moment-times/reset', {method: 'POST', body: '{}'}); live.since = new Date().toISOString(); tick(); await loadTimes(); toast('Tempos a zero.', 'ok'); }
+    catch (e) { toast(e.message, 'err'); }
+  };
   root.querySelectorAll('[data-ctx]').forEach(b => b.onclick = async () => { ctxChoice = b.dataset.ctx; try { setCtx(await api('state')); } catch { setCtx(null); } });
   root.querySelectorAll('[data-m]').forEach(b => b.onclick = async () => {
-    try { await a('moment', {method: 'POST', body: JSON.stringify({moment: b.dataset.m})}); markMoment(b.dataset.m); live.since = new Date().toISOString(); live.moment = b.dataset.m; tick(); ctxChoice = null; try { setCtx(await api('state')); } catch {} live.moment = b.dataset.m; refreshLive(); toast('No ar: ' + b.dataset.m.toUpperCase(), 'ok'); }
+    try { await a('moment', {method: 'POST', body: JSON.stringify({moment: b.dataset.m})}); markMoment(b.dataset.m); live.since = new Date().toISOString(); live.moment = b.dataset.m; tick(); loadTimes(); ctxChoice = null; try { setCtx(await api('state')); } catch {} live.moment = b.dataset.m; refreshLive(); toast('No ar: ' + b.dataset.m.toUpperCase(), 'ok'); }
     catch (e) { toast(e.message, 'err'); }
   });
   $('#save').onclick = async () => {
