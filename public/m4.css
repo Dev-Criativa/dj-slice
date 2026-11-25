@@ -100,3 +100,5 @@ body:has(.mobile.m4-mode){position:fixed;inset:0;min-height:0;width:100%;height:
  .mobile.m4-mode #content.m4-content .m4-instruction{margin-top:8px;margin-bottom:9px}
  .mobile.m4-mode #content.m4-content .m4-status{margin-top:7px}
 }
+
+.mobile.m4-mode #content.m4-content{grid-template-rows:auto minmax(0,1fr) auto auto auto!important}

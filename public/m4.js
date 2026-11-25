@@ -19,7 +19,7 @@
     const source=content.querySelector('.device-call');
     if(!source||!source.textContent.toUpperCase().includes('LIGHTS')||content.dataset.m4Ready==='1')return;
     content.dataset.m4Ready='1';content.classList.add('m4-content');document.querySelector('.mobile')?.classList.add('m4-mode');
-    content.innerHTML=`<div class="m4-kicker">TURN ON THE</div><h2 class="m4-headline">LIGHTS<span>!</span></h2><div class="m4-visual"><img src="${handImage}" alt="Ilustração de uma mão a segurar um telemóvel com a lanterna acesa"></div><p class="m4-instruction">LEVANTA O TELEMÓVEL.<br>ILUMINA A FESTA.</p><button type="button" class="m4-torch-button" aria-pressed="false"><span class="m4-torch-icon" aria-hidden="true">✦</span><span class="m4-button-label">ACENDER A LANTERNA</span></button><p class="m4-status" role="status" aria-live="polite">TOCA PARA ACENDER A LUZ DO TEU TELEMÓVEL.</p>`;
+    content.innerHTML=`<h2 class="m4-headline"><span class="m4-line-one">TURN ON</span><span class="m4-line-two">THE LIGHTS.</span></h2><div class="m4-visual"><img src="${handImage}" alt="Ilustração de uma mão a segurar um telemóvel com a lanterna acesa"></div><p class="m4-instruction">LEVANTA O TELEMÓVEL.<br>ILUMINA A FESTA.</p><button type="button" class="m4-torch-button" aria-pressed="false"><span class="m4-torch-icon" aria-hidden="true">✦</span><span class="m4-button-label">ACENDER A LANTERNA</span></button><p class="m4-status" role="status" aria-live="polite">TOCA PARA ACENDER A LUZ DO TEU TELEMÓVEL.</p>`;
     const button=content.querySelector('.m4-torch-button'),status=content.querySelector('.m4-status');
     button.addEventListener('click',()=>setTorch(button,status));
   }
