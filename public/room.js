@@ -14,7 +14,7 @@ function renderMessages(messages){
 
 function renderTracks(tracks){
   const all=(tracks||[]);
-  const list=all.slice(0,5);
+  const list=all; // todas as que o servidor devolve; fitRanking() esconde as que não cabem
   const total=all.reduce((sum,track)=>sum+(Number(track.votes)||0),0);
   const max=Math.max(1,...all.map(track=>Number(track.votes)||0));
   el('primary-label').textContent='TOP MÚSICAS · '+total+' VOTOS';
@@ -26,7 +26,21 @@ function renderTracks(tracks){
        return `<div class="room-ranking"><b>${index+1}</b><div class="room-track-info"><div class="room-track-line"><strong>${esc(track.title)}</strong><em>${votes} ${votes===1?'voto':'votos'} · ${share}%</em><span>${esc(track.artist)}</span></div><div class="room-track-bar"><i style="width:${width}%"></i></div></div></div>`;
       }).join('')
     : '<p class="room-empty">As sugestões e os votos aparecem aqui.</p>';
+  requestAnimationFrame(fitRanking);
 }
+// Mostra tantas músicas quantas couberem no painel: esconde a partir da primeira que sairia do fundo.
+function fitRanking(){
+  const box=el('primary-content');if(!box)return;
+  const rows=[...box.querySelectorAll('.room-ranking')];
+  rows.forEach(row=>row.hidden=false);
+  const limit=box.getBoundingClientRect().bottom+1;
+  let cut=false;
+  rows.forEach(row=>{if(cut||row.getBoundingClientRect().bottom>limit){cut=true;row.hidden=true;}});
+}
+window.addEventListener('resize',fitRanking);
+// Recalcula quando as fontes acabam de carregar e quando o painel muda de tamanho (ex.: aparece "A TOCAR").
+document.fonts?.ready.then(fitRanking);
+if(window.ResizeObserver){const ro=new ResizeObserver(()=>requestAnimationFrame(fitRanking));const pc=el('primary-content');if(pc)ro.observe(pc);}
 function renderPoll(poll){
   el('primary-label').textContent='RESULTADO DA VOTAÇÃO';
   const options=[...(poll?.options||[])].sort((a,b)=>(Number(b.votes)||0)-(Number(a.votes)||0));
