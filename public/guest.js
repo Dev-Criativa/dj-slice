@@ -181,7 +181,8 @@ function bindTrackSearch(){
     const t=JSON.parse(b.dataset.track);
     showTrackConfirm(t,async()=>{
      await api('tracks',{method:'POST',body:JSON.stringify({source:'tidal',tidalId:t.tidalId,title:t.title,artist:t.artist,album:t.album})});
-     b.disabled=true;b.classList.add('selected');b.innerHTML='<strong>'+esc(t.title)+'</strong><span>Voto registado ✓</span>';
+     // Depois da escolha: limpa a pesquisa e fecha a lista (a mensagem de cooldown confirma o voto).
+     clearTimeout(timer);requestId++;lastQuery='';input.value='';input.blur();results.innerHTML='';suggestions.innerHTML='';
      await draw();
     });
    });
