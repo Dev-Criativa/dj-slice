@@ -293,6 +293,24 @@ export default {async fetch(req,env,ctx){
    await env.DB.prepare("UPDATE messages SET status='rejected' WHERE event_id=? AND voter_key=? AND status IN ('pending','published')").bind(e.id,m.voter_key).run();
    return J({ok:true});
  }
+ if(a==="devices"&&req.method==="GET"){
+   // Telemóveis que enviaram mensagens (só os que têm voter_key, i.e. depois da migração 0003).
+   try{
+     const rows=(await env.DB.prepare("SELECT m.voter_key AS id,(SELECT guest_name FROM messages x WHERE x.voter_key=m.voter_key AND x.event_id=m.event_id ORDER BY x.id DESC LIMIT 1) AS name,COUNT(*) AS total,SUM(m.status='pending') AS pending,SUM(m.status='published') AS published,SUM(m.status IN ('rejected','hidden')) AS rejected,MAX(m.created_at) AS last_at,EXISTS(SELECT 1 FROM bans b WHERE b.event_id=m.event_id AND b.voter_key=m.voter_key) AS banned FROM messages m WHERE m.event_id=? AND m.voter_key IS NOT NULL GROUP BY m.voter_key ORDER BY banned DESC,last_at DESC LIMIT 300").bind(e.id).all()).results;
+     const extra=(await env.DB.prepare("SELECT voter_key AS id,guest_name AS name,created_at FROM bans b WHERE event_id=? AND NOT EXISTS(SELECT 1 FROM messages m WHERE m.event_id=b.event_id AND m.voter_key=b.voter_key)").bind(e.id).all()).results;
+     return J({devices:[...rows.map(r=>({...r,banned:!!r.banned})),...extra.map(r=>({id:r.id,name:r.name,total:0,pending:0,published:0,rejected:0,last_at:r.created_at,banned:true}))]});
+   }catch{return J({devices:[],unavailable:true})}
+ }
+ if(a.startsWith("ban/")&&req.method==="POST"){
+   const key=decodeURIComponent(a.slice(4));if(!key)return J({error:"Telemóvel inválido"},400);
+   try{
+     const last=await env.DB.prepare("SELECT guest_name FROM messages WHERE event_id=? AND voter_key=? ORDER BY id DESC LIMIT 1").bind(e.id,key).first();
+     await env.DB.batch([
+       env.DB.prepare("INSERT OR IGNORE INTO bans(event_id,voter_key,guest_name) VALUES(?,?,?)").bind(e.id,key,last?.guest_name||null),
+       env.DB.prepare("UPDATE messages SET status='rejected' WHERE event_id=? AND voter_key=? AND status IN ('pending','published')").bind(e.id,key)]);
+   }catch{return J({error:"Ban indisponível: falta aplicar a migração 0003."},409)}
+   return J({ok:true});
+ }
  if(a.startsWith("ban/")&&req.method==="DELETE"){
    const key=decodeURIComponent(a.slice(4));
    if(!key)return J({error:"Ban inválido"},400);

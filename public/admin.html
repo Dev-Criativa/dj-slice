@@ -1,1 +1,29 @@
-<!doctype html><html lang="pt-PT"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>DJ Slice — Admin</title><link rel="icon" href="/favicon.ico" sizes="any"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><meta name="theme-color" content="#171513"><link rel="stylesheet" href="/style.css?v=pin-1"><main><header><b>DJ SLICE<span>.</span></b><small>ADMIN</small></header><h1>Controla<br><em>a festa.</em></h1><section id="root" class="panel"><label>PIN DE ADMINISTRAÇÃO</label><input id="pin" type="password" autocomplete="current-password"><button id="login">ENTRAR</button></section></main><script src="/common.js?v=preview-1"></script><script src="/admin.js?v=pin-1"></script></html>
+<!doctype html>
+<html lang="pt-PT">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PEDE &amp; FATIA — Party Controller</title><link rel="icon" href="/favicon.ico" sizes="any"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><meta name="theme-color" content="#171513">
+<link rel="stylesheet" href="/style.css?v=pin-1">
+<link rel="stylesheet" href="/admin.css?v=redesign-5">
+<main class="adm">
+  <header class="adm-top">
+    <div class="adm-brand"><b>PEDE &amp; FATIA<span>.</span></b><small>PARTY CONTROLLER</small></div>
+    <div class="adm-live" id="adm-live" hidden><span class="adm-dot"></span><span id="adm-live-text">AO VIVO</span></div>
+    <button id="logout" class="adm-ghost" hidden>SAIR</button>
+  </header>
+  <nav class="adm-nav" id="adm-nav" hidden></nav>
+  <nav class="adm-subnav" id="adm-subnav" hidden></nav>
+  <section id="root" class="adm-view">
+    <div class="adm-login">
+      <h1>Controla<br><em>a festa.</em></h1>
+      <label for="pin">PIN DE ADMINISTRAÇÃO</label>
+      <input id="pin" type="password" inputmode="numeric" autocomplete="current-password">
+      <button id="login">ENTRAR</button>
+      <p id="login-error" class="adm-error" role="alert"></p>
+    </div>
+  </section>
+</main>
+<script src="/common.js?v=preview-1"></script>
+<script src="/qrcode.min.js"></script>
+<script src="/admin.js?v=redesign-2"></script>
+</html>
